@@ -7,8 +7,8 @@ xQuery 3.1 is the query language for building data driven web applications.
 Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
 
 Xqerl is an erlang application that runs on top of Erlang virtual machine [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)
-Applications running on the BEAM are known to be suited or long running, fault tolerant, reliable web applications. 
-(Erlang virtual machine) Although xqerl is a erlang applications running on the BEAM, the xqerl docker image, has the erlang OTP builtin,
+Running applications on the BEAM are suited for long running, fault tolerant, reliable web applications. 
+Although xqerl is a erlang application that runs on the BEAM, the xqerl docker image, has the erlang OTP builtin,
 so to use xqerl you do not need to locally install erlang or even know much about erlang.
 
 The xqerl application has 2 aspects
@@ -53,6 +53,8 @@ sudo make-up
 # use w3m to make a request to 'http://localhost'
 w3m -dump http://localhost
 ```
+
+
 
 
 
