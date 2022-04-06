@@ -60,7 +60,7 @@ down:
 	@podman ps -a --pod
 	@podman pod stop -a || true
 	@podman pod rm $(POD) || true
-	@podman pod list
+	@podman rm --all
 	@podman ps -a --pod
 
 .PHONY: xq-up # in podx listens on port 8081/tcp 
@@ -69,9 +69,9 @@ xq-up: podx
 	whoami | grep -q root
 	if ! podman ps -a | grep -q $(XQ)
 	then
-	podman run --rm --name xq --pod $(POD) \
+	podman run --name xq --pod $(POD) \
 		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
-	  --mount type=bind,destination=/usr/local/xqerl/src,source=./src,relabel=shared \
+	  --mount type=bind,destination=/usr/local/xqerl/src,source=$(CURDIR)/src,relabel=shared \
 		--tz=$(TIMEZONE) \
 		--detach $(XQ)
 	sleep 1
@@ -141,27 +141,48 @@ volumes-clean:
 	podman volume remove proxy-conf || true
 	podman volume remove letsencrypt || true
 
-.PHONY: podx-checks
-podx-checks: 
-	podman run --pod $(POD) --rm alpine:latest ping -W10 -c1 example.com
-	# ok: podman run --pod $(POD) --rm  -ti alpine:latest sh
-	#podman run --pod $(POD) --rm -ti --user 1000000 alpine:latest echo hi
-	# podman ps -ef
-	# podman run --pod $(POD) -u root --rm alpine:latest sh -c 'ps'
-	#podman exec xq ls -al priv/static/assets/fonts
-	#podman exec or ls -al /opt/proxy/conf
-	#podman exec or ls -al /opt/proxy/certs
-	#podman unshare ls -al /home/gmack/projects/grantmacken/glider/src/	
-	# cat /etc/subuid
-	# cat /etc/subgid
-	#getcap /usr/bin/newuidmap
-# 	podman exec or cat /proc/self/uid_map
-	# podman exec xq cat /proc/self/uid_map
-	# $(DASH)
-	# ls -ld /home/gmack/projects/grantmacken/glider/src/	
-	# $(DASH)
-	# podman unshare ls -ld /home/gmack/projects/grantmacken/glider/src/	
-	# $(DASH)
-	# cat /etc/subuid
-	# podman run --rm -ti --user root alpine echo hi
-	#
+.PHONY: service
+service: 
+	echo "##[ $(@) ]##"
+	whoami | grep -q root
+	# mkdir -p $(HOME)/.config/systemd/user
+	rm -f *.service
+	podman generate systemd --files --name $(POD) 
+	cat container-or.service | 
+	sed 's/After=pod-podx.service/After=pod-podx.service container-xq.service/g' |
+	sed '18 i ExecStartPre=/bin/sleep 2' | sudo tee /etc/systemd/system/container-or.service
+	cat pod-podx.service| sudo tee /etc/systemd/system/pod-podx.service
+	cat container-xq.service | sudo tee /etc/systemd/system/container-xq.service
+	systemctl daemon-reload
+	systemctl is-enabled container-xq.service &>/dev/null || systemctl enable container-xq.service 
+	systemctl is-enabled container-or.service &>/dev/null || systemctl enable container-or.service 
+	systemctl is-enabled pod-podx.service &>/dev/null || systemctl enable pod-podx.service
+	rm -f *.service
+	#reboot
+
+
+# Note systemctl should only be used on the pod unit and one should not start 
+
+.PHONY: service-start
+service-start: 
+	@systemctl start  pod-podx.service
+	@podman pod list
+	@podman ps -a --pod
+	@podman top xq
+
+.PHONY: service-stop
+service-stop:
+	@systemctl stop  pod-podx.service
+
+.PHONY: service-status
+service-status:
+	echo "##[ $(@) ]##"
+	whoami | grep -q root
+	systemctl --no-pager status pod-podx.service
+	$(DASH)
+	# journalctl --no-pager -b CONTAINER_NAME=or
+	$(DASH)
+
+.PHONY: journal
+journal:
+	journalctl --no-pager -b CONTAINER_NAME=xq
