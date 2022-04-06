@@ -87,7 +87,11 @@ make service
 reboot
 ```
 
-After reboot we can check 
+After reboot we can now use systemctl to 
+ - check service status
+ - stop the service
+ - start the service
+
 ```
 # enter super do
 sudo -s
