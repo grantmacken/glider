@@ -73,8 +73,11 @@ w3m -dump http://localhost
 
 ### xqerl as a service
 
-Now we have a running xqerl instance, we can 
-set the pod to run on boot. 
+Now we have a running xqerl instance, we can set the pod to run on boot
+by using podman to generate systemd files.
+We make slight adjustment to the generated files as we want our proxy server container to
+boot after our xqerl container is running.
+
 
 ```
 # enter super do
@@ -105,6 +108,8 @@ podman log xq
 podman top xq
 # exit super do
 exit
+# use firefox to make a request to 'http://localhost'
+firefox http://localhost
 ```
 
 
