@@ -7,10 +7,10 @@ xQuery 3.1 is the query language for building data driven web applications.
 Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
 
 Xqerl is an erlang application that runs on top of the Erlang virtual machine [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine))
-Web applications that run on the BEAM have a reputation for being long running, fault tolerant and reliable. 
-The xqerl docker image has the erlang OTP builtin, so although xqerl is a erlang application that runs on the BEAM,
-to use xqerl you do not need to locally install erlang or even know much about erlang.
+Erlang applications have a reputation for being long running, fault tolerant and reliable.
 
+This project uses a xqerl docker image, so you
+do not need to locally install erlang or even know much about erlang.
 
 ## Aims 
 
@@ -20,12 +20,6 @@ The  web application will run in a podman pod and consist of 2 named containers
  1. 'or' container: a nginx reverse proxy server based on openresty
  2. 'xq' container: the xqerl application
 
-The xqerl application has 2 aspects
-2. a database that stores 
-    - [XDM](https://www.w3.org/TR/xpath-datamodel-31/) items
-    - link items 
-1. a [xQuery](https://en.wikipedia.org/wiki/XQuery) 3.1 app engine  
-
 <!--
 The goal is **remote** deployment to a single Google Compute Engine instance.
 This dockerized xQuery web application deployment will serve secure HTTPS web pages from your IP domain names
@@ -33,20 +27,23 @@ This dockerized xQuery web application deployment will serve secure HTTPS web pa
 
 ### Prerequisites
 
-* Make: Why Use Make? 
+**Make**:
+
 > Makefiles are machine-readable documentation that make your workflow reproducible.
+
 cited from [Why Use Make](https://bost.ocks.org/mike/make/)
 
-* readable cmd line output :  
-  - jq: pipe to format JSON output `jq '.'
-  - xmlint: pipe to format XML output `xmllint --format`
-  - w3m: to screen dump http requests `w3m -dump http://localhost`
+**Utilities**:
+- jq: pipe to format JSON output `jq '.'`
+- xmlint: pipe to format XML output `xmllint --format`
+- w3m: to screen dump http requests `w3m -dump http://localhost`
 
-* [gh](https://github.com/cli/cli): the GitHub CLI. 
+**the GitHub CLI**: [gh](https://github.com/cli/cli). 
 
-* [podman](https://podman.io/podman)  [getting-started](https://podman.io/getting-started/installation) 
+**[podman](https://podman.io/podman)**: I am using the latest release v4. 
+To install see [getting-started](https://podman.io/getting-started/installation) 
+
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
-I am using the latest release v4 
 
 ### Getting Started
 
