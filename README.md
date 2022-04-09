@@ -50,6 +50,29 @@ I am using the latest release v4
 
 ### Getting Started
 
+```
+# 1. clone this repo and cd into dir
+gh repo clone grantmacken/glider
+cd glider
+# 2. set hosts and enable rootless to operate on port 80
+make init
+# 3. pull docker images
+make-images
+# 4. bring the pod up with two running containers
+#  - 'or' container: nginx as a reverse proxy
+#  - 'xq' container: xqerl xQuery app server and database
+make-up
+# 5. run the pod as a service 
+make-service
+# 6. use `make` to build the example.com website from sources in src dir.
+make
+# 7. view the example.com website
+firefox http://example.com
+```
+
+## set hosts and enable rootless to operate on port 80
+
+
 In our local develpoment environment, with podman we are going to run a pod without root privileges.
 A [shortcoming of rootless podman](https://github.com/containers/podman/blob/main/rootless.md) 
 is that podman can not create containers that bind to ports < 1024,
@@ -79,22 +102,4 @@ sudo tee -a /etc/hosts
 
 We have `make` target for the above code, so no need to type it in.
 
-```
-# 1. clone this repo and cd into dir
-gh repo clone grantmacken/glider
-cd glider
-# 2. set hosts and enable rootless to operate on port 80
-make init
-# 3. pull docker images
-make-images
-# 4. bring the pod up with two running containers
-#  - 'or' container: nginx as a reverse proxy
-#  - 'xq' container: xqerl xQuery app server and database
-make-up
-# 5. run the pod as a service 
-make-service
-# 6. use `make` to build the example.com website from sources in src dir.
-make
-# 7. view the example.com website
-firefox http://example.com
-```
+
