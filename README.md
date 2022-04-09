@@ -11,13 +11,21 @@ Web applications that run on the BEAM have a reputation for being long running, 
 The xqerl docker image has the erlang OTP builtin, so although xqerl is a erlang application that runs on the BEAM,
 to use xqerl you do not need to locally install erlang or even know much about erlang.
 
-The xqerl application has 2 aspects
-1. a [xQuery](https://en.wikipedia.org/wiki/XQuery) 3.1 application engine:  
-2. a database that stores [XDM](https://www.w3.org/TR/xpath-datamodel-31/) items
 
 ## Aims 
 
 We will be setting up a **local** dockerized xQuery web application development environment.
+
+The  web application will run in a podman pod and consist of 2 named containers
+ 1. 'or' container: a nginx reverse proxy server based on openresty
+ 2. 'xq' container: the xqerl application
+
+The xqerl application has 2 aspects
+2. a database that stores 
+    - [XDM](https://www.w3.org/TR/xpath-datamodel-31/) items
+    - link items 
+1. a [xQuery](https://en.wikipedia.org/wiki/XQuery) 3.1 app engine  
+
 <!--
 The goal is **remote** deployment to a single Google Compute Engine instance.
 This dockerized xQuery web application deployment will serve secure HTTPS web pages from your IP domain names
@@ -25,100 +33,68 @@ This dockerized xQuery web application deployment will serve secure HTTPS web pa
 
 ### Prerequisites
 
-* make, bash 
-* to prettyfy cmd line output:  
+* Make: Why Use Make? 
+> Makefiles are machine-readable documentation that make your workflow reproducible.
+cited from [Why Use Make](https://bost.ocks.org/mike/make/)
+
+* readable cmd line output :  
   - jq: pipe to format JSON output `jq '.'
   - xmlint: pipe to format XML output `xmllint --format`
   - w3m: to screen dump http requests `w3m -dump http://localhost`
+
+* [gh](https://github.com/cli/cli): the GitHub CLI. 
+
 * [podman](https://podman.io/podman)  [getting-started](https://podman.io/getting-started/installation) 
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
-  I am using the latest release v4 
-* [gh](https://github.com/cli/cli) the GitHub CLI
-
-<!--
-**optional** for Cloud Compute Engine hosting
-
-Sites will be hosted on single Google Cloud Compute Engine instance, 
-so you will need a Google Cloud Account.
-
-If you don't have a Google Cloud Account, 
-then sign up to the [Google Cloud Free Trial Account](https://k21academy.com/google-cloud/create-google-cloud-free-tier-account/)
--->
-<!-- For experimenting you can try the free tier [e2-micro VM instance](https://cloud.google.com/free) -->
-
-<!--
-If you don't have a the [gcloud](https://cloud.google.com/sdk/docs/install) cli the 
-the install istructions are in the link.
--->
+I am using the latest release v4 
 
 ### Getting Started
 
+In our local develpoment environment, with podman we are going to run a pod without root privileges.
+A [shortcoming of rootless podman](https://github.com/containers/podman/blob/main/rootless.md) 
+is that podman can not create containers that bind to ports < 1024,
+unless you explictly tell your system to to so. 
+
+Since our published pod ports will be on port 80 and port 433, 
+we need to implement the suggested workaround. The same workaround is also used if
+you want to expose a privalaged port in a 
+[rootless docker setup](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports)
+
+```shell
+grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
+	echo 'net.ipv4.ip_unprivileged_port_start=80' | \
+	sudo tee -a /etc/sysctl.conf
+  sudo sudo sysctl --system
 ```
-# clone this repo
+
+Our example site will classic 'example.com' domain
+Since we do not own or control the 'example.com' domain,
+we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
+
+```shell
+grep -q '127.0.0.1   example.com' /etc/hosts || \
+echo '127.0.0.1   example.com' | \
+sudo tee -a /etc/hosts
+```
+
+We have `make` target for the above code, so no need to type it in.
+
+```
+# 1. clone this repo and cd into dir
 gh repo clone grantmacken/glider
 cd glider
-# enter super do
-sudo -s 
-# pull images
+# 2. set hosts and enable rootless to operate on port 80
+make init
+# 3. pull docker images
 make-images
-# bring container pod up
+# 4. bring the pod up with two running containers
+#  - 'or' container: nginx as a reverse proxy
+#  - 'xq' container: xqerl xQuery app server and database
 make-up
-# see what is running in the pod
-podman podman --pod
-# exit super do
-exit
-# use w3m to make a request to 'http://localhost'
-w3m -dump http://localhost
+# 5. run the pod as a service 
+make-service
+# 6. use `make` to build the example.com website from sources in src dir.
+make
+# 7. view the example.com website
+firefox http://example.com
 ```
-
-### xqerl as a service
-
-Now we have a running xqerl instance, we can set the pod to run on boot
-by using podman to generate systemd files.
-We make slight adjustment to the generated files as we want our proxy server container to
-boot after our xqerl container is running.
-
-
-```
-# enter super do
-sudo -s 
-make service
-# reboot
-reboot
-```
-
-After reboot we can now use systemctl to 
- - check service status
- - stop the service
- - start the service
-
-```
-# enter super do
-sudo -s
-# check service status
-make service-status
-# check with podman
-podman ps --pod -a
-# stop the service
-make service-stop
-# 'xq' ond 'or' containers should now have exited
-podman ps --pod --all
-# restart the service
-# 'xq' ond 'or' containers should now be up
-podman ps --pod --all
-# check the xqerl container log 'xq'
-podman log xq
-# use podman top
-podman top xq
-# exit super do
-exit
-# use firefox to make a request to 'http://localhost'
-firefox http://localhost
-```
-
-
-
-
-
-
-
