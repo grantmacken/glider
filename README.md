@@ -2,15 +2,23 @@
 
 >  Not to be confused with the Flying Squirrel.
 
-xQuery 3.1 is the query language for building data driven web applications.
-
 Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
+
+xQuery 3.1 is the query language for building data driven web applications.
 
 Xqerl is an erlang application that runs on top of the Erlang virtual machine [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine))
 Erlang applications have a reputation for being long running, fault tolerant and reliable.
 
 This project uses a xqerl docker image, so you
 do not need to locally install erlang or even know much about erlang.
+
+## WIP note
+
+Code is a work in progress.
+Some stuff is pulled from other projects, and needs to be rewritten for this project.
+I try to take 'show not tell' approach,
+so work code will be run on 'github actions'
+and will be making some acsciicast.
 
 ## Aims 
 
@@ -86,7 +94,7 @@ grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
   sudo sudo sysctl --system
 ```
 
-Our example site will classic 'example.com' domain
+Our example site will use the classic 'example.com' domain
 Since we do not own or control the 'example.com' domain,
 we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
 
@@ -97,5 +105,3 @@ sudo tee -a /etc/hosts
 ```
 
 We have `make init` target for the above code, so no need to type it in.
-
-
