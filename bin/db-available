@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+declare -a args
+args=("$@")
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+source .env
+CURL="ghcr.io/grantmacken/podx-curl:${CURL_VER}"
+CRL="podman run --rm --pod ${POD} ${CURL} --silent --show-error --connect-timeout 1 --max-time 2 " 
+
+function dash {
+  printf %60s | tr ' ' '-' && echo
+}
+
+function msg() {
+  echo >&2 -e "${1-}"
+}
+
+function die() {
+  local msg=$(echo -n " ${RED}✘${NC} " && echo $1)
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+case "${#args[@]}" in
+1)
+  BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
+  SRC="src/data/$BASE"
+  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  DIRNAME=$(dirname $BASE)
+  BASENAME=$(basename $BASE)
+  EXT="${BASENAME##*.}"
+  RESOURCE="${BASENAME%.*}"
+  dash
+  URI="http://localhost:8081/db/${DIRNAME}/${RESOURCE}"
+  echo ${URI}
+  # use extension
+  case ${EXT} in
+  json)
+    echo "collection: $URI "
+    dash
+    echo 'TODO'
+  ;;
+  xml)
+  dash
+	${CRL} --header "Accept: application/xml" $URI
+  ;;
+  md)
+   dash
+   echo "$( ${CRL}  \
+      -I \
+      --header "Accept: application/xml" \
+      $URI)" | 
+      grep -oP 'HTTP/1.1 200 \KOK' || die "[ ${URI} ] unavaiable"
+  ;;
+  xq)
+    dash
+    echo 'TODO'
+  ;;
+  *)
+    die " [ ${EXT} ] can not handle extension "
+    ;;
+  esac
+  ;;
+*)
+  die "Usage: $(basename "${BASH_SOURCE[0]}") [src] 1 arg required"
+  ;;
+esac
+

@@ -1,0 +1,79 @@
+:root {
+    --dark1: hsla(220, 16%, 22%, 1); /* #2E3440 */
+    --dark2: hsla(222, 16%, 28%, 1); /* #3b4252 */
+    --dark3: hsla(220, 17%, 32%, 1); /* #434c5e */
+    --dark4: hsla(220, 16%, 36%, 1); /* #4c566a */
+    --dark5: hsla(221, 16%, 46%, 1); /* #636f88 */
+   --light1: hsla(219, 28%, 88%, 1); /* #d8dee9 */
+   --light2: hsla(218, 27%, 92%, 1); /* #E5E9F0 */
+   --light3: hsla(218, 27%, 94%, 1); /* #ECEFF4 */
+   --light4: hsla(60, 30%, 96%, 1);  /* #F8F8F2 */
+    --blue1: hsla(179, 25%, 65%, 1); /* #8FBCBB */
+    --blue2: hsla(193, 43%, 67%, 1); /* #88C0D0 */
+    --blue3: hsla(210, 34%, 63%, 1); /* #81A1C1 */
+    --blue4: hsla(213, 32%, 52%, 1); /* #5e81ac */
+      --red: hsla(354, 42%, 56%, 1); /* #bf616a */
+   --orange: hsla(14, 51%, 63%, 1);  /* #d08770 */
+   --yellow: hsla(40, 71%, 73%, 1);  /* #EBCB8B */
+    --green: hsla(92, 28%, 65%, 1);  /* #A3BE8C */
+   --purple: hsla(311, 20%, 63%, 1); /* #b48ead */
+
+
+   --base-font-family: 'IBM Plex Serif', 'Georgia', Times, serif;
+   --base-font-size: min(max(1rem, 4vw), 22px);
+   --base-line-height: 1.5;
+   --base-color: var(--dark1);
+   --base-background: var(--light4);
+
+  /* BANNER */
+  --banner-color:  var(--light1);
+  --banner-background: var(--dark5);
+
+  /* HEADINGS */
+  --heading-font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  --heading-color: var(--dark3);
+  --heading-weight: 700;
+
+  --heading-large-font-size: 2.35em;
+  --heading-large-line-height: 1.2;
+  --heading-medium-font-size: 1.75rem;
+  --heading-medium-line-height: 1.225;
+  --heading-small-font-size: 1.5rem;
+  --heading-small-line-height: 1.43;
+
+  /* QUOTES */
+  --quote-backgound: var(--light2);
+  --quote-indicator: 5px solid var(--blue1);
+
+  /* LISTS */
+  --list-font: 'IBM Plex Sans Condensed', 'Helvetica Neue', Arial, sans-serif;
+
+ /* TABLES */
+ --table-row-indicator: 1px solid #f1f1f1 ;
+
+  /* NAVIGATION */
+  --nav-background: var(--light2);
+  /* NAVIGATION HYPERLINKS */
+  --link-color: var(--blue4);
+  --link-highlight: var(--green);
+
+  /* CODE BLOCK HIGHLIGHTING */
+  --code-font: 'IBM Plex Mono', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', Courier, monospace;
+  --code-background: var(--dark1);
+  --code-color: var(--light4);
+  --code-inline-background: var(--light2);
+  --code-inline-color: var(--dark1);
+  --code-size: smaller;
+
+  /* CODE TOKENS AS DEFINED BY PRISM */
+  --code-boolean: var(--blue3);
+  --code-comment: var(--dark5);
+  --code-function: var(--blue2);
+  --code-keyword: var(--blue3);
+  --code-number: var(--purple);
+  --code-operator: var(--blue3);
+  --code-punctuation: var(--blue3);
+  --code-regex: var(--yellow);
+  --code-string: var(--green);
+  --code-symbol: var(--blue3);
+}

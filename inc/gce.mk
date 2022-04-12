@@ -78,7 +78,6 @@ gce-instance-info:
 		#gcloud compute  project-info describe 
 		#gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].networkIP)'
 		# external IP
-		$(call gce_ip)	
 		#gcloud dns managed-zones describe $(GCE_INSTANCE_NAME)
 		#gcloud compute addresses list
 		#gcloud dns managed-zones describe glider-zone
@@ -115,21 +114,24 @@ gce-down:
 
 .PHONY: gce-volumes ## gce create docker volumes
 gce-volumes:
-	$(Gcmd) 'sudo podman volume create xqerl-database' || true
-	$(Gcmd) 'sudo podman volume create xqerl-code' || true
-	$(Gcmd) 'sudo podman volume create static-assets' || true
-	$(Gcmd) 'sudo podman volume create proxy-conf' || true
-	$(Gcmd) 'sudo podman volume create letsencrypt' || true
-	$(Gcmd) 'sudo podman volume ls'
+	$(Gcmd) \
+		'sudo podman volume exists xqerl-code || sudo podman volume create xqerl-code; \
+		sudo podman volume exists xqerl-database || sudo podman volume create xqerl-database; \
+		sudo podman volume exists static-assets || sudo podman volume create static-assets; \
+		sudo podman volume exists proxy-conf || sudo podman volume create proxy-conf; \
+		sudo podman volume exists letsencrypt || sudo podman volume create letsencrypt; \
+		sudo podman volume ls '
 
 .PHONY: gce-volumes-clean
 gce-volumes-clean:
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman volume remove xqerl-code || true'
-	$(Gcmd) 'sudo podman volume remove xqerl-database || true'
-	$(Gcmd) 'sudo podman volume remove static-assets || true'
-	$(Gcmd) 'sudo podman volume remove proxy-conf || true'
-	$(Gcmd) 'sudo podman volume remove letsencrypt || true'
+	$(Gcmd) \
+		'sudo podman volume exists xqerl-code && sudo podman volume remove xqerl-code; \
+		sudo podman volume exists xqerl-database && sudo podman volume remove xqerl-database; \
+		sudo podman volume exists static-assets && sudo podman volume remove static-assets; \
+		sudo podman volume exists proxy-conf && sudo podman volume remove proxy-conf; \
+		sudo podman volume ls '
+
 
 .PHONY: gce-podx
 gce-podx: # --publish 80:80 --publish 443:443
@@ -192,7 +194,6 @@ gce-check-flying:
 	podman run --rm $(W3M) -dump http://gmack.nz
 	echo && $(DASH)
 
-
 .PHONY: gce-check-site-resolve
 gce-check-site-resolve: 
 	echo "##[ $(@) ]##"
@@ -229,7 +230,15 @@ gce-import-certs:
 ## prefix cb
 ##############################
 
-gce-dns:
+.PHONY: gce-dns-info
+gce-dns-info:
+	gcloud iam service-accounts list
+	gcloud iam service-accounts keys list --iam-account=certbot@glider-1.iam.gserviceaccount.com
+	$(DASH)
+	gcloud iam service-accounts keys list --iam-account=383401241092-compute@developer.gserviceaccount.com 
+
+
+gce-dns-type-a-record:
 	gcloud dns record-sets create gmack.nz \
 			--rrdatas=$(call gce_ip) \
 			--ttl=300 \
@@ -246,33 +255,41 @@ gce-service-acc:
 		--role roles/dns.admin
 	fi
 	#gcloud iam service-accounts list
-	if [ ! -f src/.secrets/gcpkey.json ]
+	if [ ! -f .secrets/gcpkey.json ]
 	then
-	gcloud iam service-accounts keys create src/proxy/certs/gcpkey.json --iam-account "$(GCE_SERVICE_ACCOUNT)"
+	gcloud iam service-accounts keys create .secrets/gcpkey.json --iam-account "$(GCE_SERVICE_ACCOUNT)"
 	fi
-	cat src/proxy/certs/gcpkey.json | \
-		podman run --rm --interactive  --mount $(Mount) --entrypoint '["sh", "-c"]' $(OR) \
-		'cat - > /opt/proxy/certs/$(notdir $@)'
+	gcloud compute scp .secrets/gcpkey.json $(GCE_NAME):/home/core/.secrets/gcpkey.json
 
 # https://russt.me/2018/04/wildcard-lets-encrypt-certificates-with-certbot/
-.PHONY: cb
-cb:
-	@echo '## $(@) ##'
-	gcloud compute scp src/proxy/certs/gcpkey.json $(GCE_NAME):/home/core/gcpkey.json
+#
+PHONY: certs-import
+certs-import: 
+	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
+
+PHONY: certs-proxy-mod # after certs import
+certs-proxy-mod: src/proxy/conf/proxy.conf
+	sed -i 's/ include basic.conf;/#include basic.conf;/' $<
+	sed -i 's/# include tls_server.conf;/include tls_server.conf;/' $<
+	sed -i 's/# include redirect.conf;/include redirect.conf;/' $<
+	
+
+PHONY: certs-inspect
+certs-inspect: 
+	podman exec or ls -R /etc/letsencrypt
+
 
 .PHONY: cb-certs
-cb-certs: src/proxy/certs/certificates.conf
+cb-certs: src/proxy/conf/certificates.conf
 
-.PHONY: cb-certs-clean
-cb-certs-clean: 
-	rm src/proxy/certs/certificates.txt || true
-	rm src/proxy/certs/certificates.conf || true
-
-src/proxy/certs/certificates.txt:
+src/proxy/certificates.txt:
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@echo '## $(notdir $@) ##'
-	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' > $@
+	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
+	tee  $@
 
-src/proxy/certs/certificates.conf: src/proxy/certs/certificates.txt
+src/proxy/conf/certificates.conf: src/proxy/certificates.txt
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@echo '## $(notdir $@) ##'
 	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
 	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
@@ -280,7 +297,7 @@ src/proxy/certs/certificates.conf: src/proxy/certs/certificates.txt
 
 .PHONY: cb-certonly
 cb-certonly:
-	$(Gcmd) 'cat gcpkey.json | tee | \
+	$(Gcmd) 'cat .secrets/gcpkey.json | tee | \
 		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
 		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
 		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
@@ -294,11 +311,13 @@ cb-certonly:
 		--domains gmack.nz \
 		&& ls -alR /etc/letsencrypt \
 	  "'
+	# once we have obtained certs we can import locally
+	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
 
 .PHONY: cb-dry-run
 cb-dry-run:
 	#$(Gcmd) 'ls -l gcpkey.json'
-	$(Gcmd) 'cat gcpkey.json | tee | \
+	$(Gcmd) 'cat .secrets/gcpkey.json | tee | \
 		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
 		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
 		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
@@ -312,25 +331,3 @@ cb-dry-run:
 		--domains gmack.nz \
 		&& ls -alR /etc/letsencrypt \
 	  "'
-
-
-# && cat /var/log/letsencrypt/letsencrypt.log \
-# --dns-google-propagation-seconds 120 \
-
-# cb-clean:
-# 	@echo '## $@ ##'
-# 	@rm -f _deploy/cli.ini
-#
-# cb-ini: _deploy/cli.ini
-
-# define certbotConfig
-# rsa-key-size = 2048
-# email = $(shell git config user.email)
-# domains = $(DOMAINS)
-# text = true
-# authenticator = webroot
-# webroot-path = /home
-# agree-tos = true
-# eff-email = true
-# logs-dir = /home
-# endef

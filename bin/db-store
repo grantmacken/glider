@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+declare -a args
+args=("$@")
+BaseName=$(basename "${BASH_SOURCE[0]}")
+function msg() {
+  echo >&2 -e "${1-}"
+}
+
+function die() {
+  local msg=$(echo -n "✘  " && echo $1)
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+case "${#args[@]}" in
+1)
+  podman exec xq xqerl eval "
+  Arg1 = list_to_binary(\"${args[0]}\"),
+  Args = #{<<\"src\">> => Arg1},
+  Mod = xqerl:compile(\"./src/code/db-store.xq\"),
+  case Mod:main(Args) of
+    Bin when is_binary(Bin) ->  file:write_file(\"./src/store.xq\",binary_to_list(Bin));
+    Atom when is_atom(Atom) -> Atom;
+    _ -> false
+  end,
+  xqerl:run(xqerl:compile(\"./src/store.xq\")).
+"
+  ;;
+*)
+  die "Usage: $(basename "${BASH_SOURCE[0]}") [src] requires 1 arg"
+  ;;
+esac

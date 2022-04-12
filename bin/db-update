@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+declare -a args
+args=("$@")
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+function dash {
+  printf %60s | tr ' ' '-' && echo
+}
+
+function msg() {
+  echo >&2 -e "${1-}"
+}
+
+function die() {
+  local msg=$(echo -n "✘  " && echo $1)
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+case "${#args[@]}" in
+1)
+  BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
+  SRC="src/data/$BASE"
+  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  DIRNAME=$(dirname $BASE)
+  BASENAME=$(basename $BASE)
+  EXT="${BASENAME##*.}"
+  RESOURCE="${BASENAME%.*}"
+  dash
+  HEADERS="_build/data/${BASE}.headers"
+  [ -e "${HEADERS}" ]
+  URI="$(grep -oP '^location: \K([^\s]+)' ${HEADERS} || echo '')"
+  BASENAME=$(basename $BASE)
+  EXT="${BASENAME##*.}"
+  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  dash
+  # use extension
+  case ${EXT} in
+  json)
+  echo "collection: $URI "
+  dash
+    # use jq to check if doc wellformed
+    jq  '.' $SRC &>/dev/null || die " [ $SRC  ] invalid JSON: not well formed"
+    curl --silent --show-error --connect-timeout 1 --max-time 2 \
+      -X PUT \
+      --dump-header - \
+      --output /dev/null \
+      --header "Content-Type: application/json" \
+      --data-binary @${SRC} \
+      ${URI}
+    ;;
+  xml)
+  echo "collection: $URI "
+    # use xmllint to check if doc wellformed
+    xmllint $SRC &>/dev/null || die " [ $SRC  ] invalid XML: not well formed"
+    curl --silent --show-error --connect-timeout 1 --max-time 2 \
+      -X PUT \
+      --dump-header - \
+      --output /dev/null \
+      --header "Content-Type: application/xml" \
+      --data-binary @${SRC} \
+      ${URI}
+    ;;
+  md)
+  echo "collection: ${URI} "
+    # podman pull ghcr.io/grantmacken/podx-cmark:0.30.2
+    CMARK_IMG=ghcr.io/grantmacken/podx-cmark:0.30.2
+    #xmllint - --format | \
+    cat $SRC |
+      podman run --rm --interactive ${CMARK_IMG} --to xml --validate-utf8 --safe --smart 2>/dev/null |
+      sed -e '1,2d' | \
+    curl --silent --show-error --connect-timeout 1 --max-time 2 \
+      -X PUT \
+      --dump-header - \
+      --output /dev/null \
+      --header "Content-Type: application/xml" \
+      --data-binary "@-" \
+      "${URI}"
+    ;;
+  xq)
+  SOURCE="./src/data/$BASE"
+  echo "src: $SOURCE "
+  podman exec xq xqerl eval "
+  Arg1 = list_to_binary(\"${SOURCE}\"),
+  Args = #{<<\"src\">> => Arg1},
+  Mod = xqerl:compile(\"./src/code/db-store-func.xq\"),
+  case Mod:main(Args) of
+    Bin when is_binary(Bin) ->  file:write_file(\"./src/store.xq\",binary_to_list(Bin));
+    Atom when is_atom(Atom) -> Atom;
+    _ -> false
+  end,
+  xqerl:run(xqerl:compile(\"./src/store.xq\"))."
+  rm -f ./src/store.xq
+    ;;
+  *)
+    die " [ ${ext} ] can not handle extension "
+    ;;
+  esac
+  ;;
+*)
+  die "Usage: $(basename "${BASH_SOURCE[0]}") [src] 1 arg required"
+  ;;
+esac

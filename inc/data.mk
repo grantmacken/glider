@@ -14,33 +14,68 @@ jsonBuild := $(patsubst src/%.json,_build/%.json.headers,$(jsonList))
 xmlBuild := $(patsubst src/%.xml,_build/%.xml.headers,$(xmlList))
 xqBuild := $(patsubst src/%.xq,_build/%.xq.stored,$(xqList))
 
-data: $(mdBuild) $(xmlBuild) $(xqBuild) ## from src store XDM data items in db 
-# 
-# $(xmlBuild)  $(xqBuild)
+.PHONY: data data-deploy
+data: data-deploy ## from src store XDM data items in db
+data-deploy: _deploy/xqerl-database.tar
 
-# .PHONY: data-clean
-# data-clean: ## remove data build artifacts
-# 	@echo '## $(@) ##'
-# 	@rm -v $(xqBuild) $(mdBuild) $(xmlBuild) || true
+.PHONY: data-clean
+data-clean: ## clean "data" build artefacts
+	rm -f $(mdBuild) $(xmlBuild) $(xqBuild)
+
+.PHONY: data-list
+data-list:
+	podman run  --rm --pod $(POD) $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		http://example.com/db
+	# echo '##[ $@ ]##'
+	#podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://example.com' => uri-collection()) => string-join(' ')\" ))."
+
+_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild)	
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	# echo '##[  $(notdir $@) ]##'
+	podman volume export  $(basename $(notdir $@)) > $@
 
 _build/data/%.md.headers: src/data/%.md
-	@echo '## $(notdir $<) ##'
-	mkdir -p $(dir $@)
-	$(DASH)
-	## bin/db-create $< | tee $@
-	if bin/db-available $< &>/dev/null
+	if podman run  --rm --pod $(POD) $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/xml" \
+		http://localhost:8081/db/$(*) | grep -q '200'
 	then
-	echo " update cmark XML from markdown"
-	bin/db-update $< | grep -qoP 'HTTP/1.1 204 No Content'
+	echo " - update cmark XML from markdown"
+	echo 'uri: http://localhost:8081/db/$(*)'
+	cat $< |
+	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
+	sed -e '1,2d' 2>/dev/null |
+	podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+    -X PUT \
+		--header "Content-Type: application/xml" \
+		--data-binary @- \
+		http://localhost:8081/db/$(*) | grep -q '204'
 	touch $@ 
 	else
-	echo " create cmark XML from markdown"
-	bin/db-create $< | tee $@
+	echo " - create cmark XML from markdown"
+	echo 'collection: http://localhost:8081/db/$(dir $(*))'
+	echo 'resource: $(basename $(notdir $<))'
+	cat $< |
+	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
+	sed -e '1,2d' 2>/dev/null |
+	podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--header "Content-Type: application/xml" \
+		--header "Slug: $(basename $(notdir $<))" \
+		--data-binary @- \
+		--output /dev/null \
+		--dump-header - \
+		http://localhost:8081/db/$(dir $(*)) | tee $@
+	grep -q '201' $@
 	fi
-	sleep 1
-	if [ -e tiny-lr.pid ]; then
-	curl -s --ipv4  http://localhost:35729/changed?files=$*
-	fi
+	# sleep 1
+	# if [ -e tiny-lr.pid ]; then
+	# curl -s --ipv4  http://localhost:35729/changed?files=$*
+	# fi
 	$(DASH)
 
 _build/data/%.xml.headers: src/data/%.xml
@@ -61,11 +96,13 @@ _build/data/%.xml.headers: src/data/%.xml
 	bin/db-create $< | tee $@
 	grep -qoP 'HTTP/1.1 201 Created' $@
 	fi
-	sleep 1
-	curl --silent --show-error --connect-timeout 1 --max-time 2 \
-    --header "Accept: application/xml" \
-		$(shell grep -oP 'location: \K([^\s]+)' $@)
-	sleep 1
+	# sleep 1
+	# curl --silent --show-error --connect-timeout 1 --max-time 2 \
+ #    --header "Accept: application/xml" \
+	# 	$(shell grep -oP 'location: \K([^\s]+)' $@)
+	# sleep 1
+	#
+	#
 
 _build/data/%.xq.stored: src/data/%.xq
 	@echo '## $(notdir $<) ##'

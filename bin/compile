@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+declare -a args
+args=("$@")
+MainMod=$(basename "${BASH_SOURCE[0]}")
+function msg() {
+  echo >&2 -e "${1-}"
+}
+
+function die() {
+  local msg=$(echo -n "✘  " && echo $1)
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+case "${#args[@]}" in
+  1)
+    podman exec xq xqerl escript src/escripts/compile.escript ${args[0]}
+    ;;
+  *)
+    die "Usage: ${MainMod} [ src ]"
+    ;;
+esac
+

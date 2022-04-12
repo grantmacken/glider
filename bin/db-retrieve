@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+declare -a args
+args=("$@")
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+function dash {
+  printf %60s | tr ' ' '-' && echo
+}
+
+function msg() {
+  echo >&2 -e "${1-}"
+}
+
+function die() {
+  local msg=$(echo -n " ${RED}✘${NC} " && echo $1)
+  local code=${2-1} # default exit status 1
+  msg "$msg"
+  exit "$code"
+}
+
+case "${#args[@]}" in
+1)
+  BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
+  SRC="src/data/$BASE"
+  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  DIRNAME=$(dirname $BASE)
+  BASENAME=$(basename $BASE)
+  EXT="${BASENAME##*.}"
+  RESOURCE="${BASENAME%.*}"
+  URI="http://localhost:8081/db/${DIRNAME}/${RESOURCE}"
+  bin/db-available $SRC &>/dev/null || die " [ $URI ] not avaiaable"
+  # use extension
+  case ${EXT} in
+  json)
+    echo "collection: $URI "
+    dash
+    echo 'TODO'
+  ;;
+  xml)
+  dash
+    curl --silent --show-error --connect-timeout 1 --max-time 2 \
+      --header "Accept: application/xml" \
+      $URI
+  ;;
+  md)
+    curl --silent --show-error --connect-timeout 1 --max-time 2 \
+      --header "Accept: application/xml" \
+      $URI
+    echo
+  ;;
+  xq)
+    dash
+    echo 'TODO'
+  ;;
+  *)
+    die " [ ${EXT} ] can not handle extension "
+    ;;
+  esac
+  ;;
+*)
+  die "Usage: $(basename "${BASH_SOURCE[0]}") [src] 1 arg required"
+  ;;
+esac
+

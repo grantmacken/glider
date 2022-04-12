@@ -1,0 +1,154 @@
+/* Box sizing rules */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* + * {
+	margin-top: 1.5em;
+}
+
+/* Body */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  text-rendering: optimizeSpeed;
+  font-family: var(--base-font-family); 
+  font-size: var(--base-font-size);
+  line-height: var(--base-line-height);
+  color: var(--base-color);
+  background-color: var(--base-background);
+  /* layout */
+  max-width: 38em;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 13px;
+}
+
+@media (max-width: 684px) {
+  body {
+    font-size: 1.53rem; } }
+
+@media (max-width: 382px) {
+  body {
+    font-size: 1.35rem; } }
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  line-height: 1.1;
+  font-family: var(--heading-font-family);
+  font-weight: var(--heading-weight);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -ms-word-break: break-all;
+  word-break: break-word; }
+
+h1 {
+  font-size: var(---heading-large-font-size); 
+  line-height: var(--heading-large-line-height);
+}
+
+h2 {
+  font-size: var(--heading-medium-font-size);
+  line-height: var(--heading-medium-line-height);
+}
+
+h3 {
+ font-size: var(--heading-small-font-size);
+ line-height: var(--heading-small-line-height);
+}
+
+p + p {
+margin-top: 0;
+text-indent: 2em;
+}
+
+small, sub, sup {
+  font-size: 75%; 
+}
+
+/* STANDOUT from surounding text */
+
+figure, figcaption, blockquote {
+  margin: 0;
+}
+
+blockquote {
+  /*margin: 0;*/
+  margin-left: 0px;
+  margin-right: 0px;
+  padding-left: 1em;
+  padding-top: 0.8em;
+  padding-bottom: 0.8em;
+  padding-right: 0.8em;
+  border-left: var(--quote-indicator);
+  margin-bottom: 2.5rem;
+  background-color: var(--quote-backgound) 
+}
+
+hr {
+  border-color: #1d7484; 
+}
+
+/* MEDIA */
+
+/* Make images easier to work with */
+img, picture, video {
+  max-width: 100%;
+  display: block;
+}
+
+/* img, video { */
+/*   height: auto; */
+/*   max-width: 100%; */
+/*   margin-top: 0px; */
+/*   margin-bottom: 2.5rem; } */
+
+/* LISTS and NAVIGATION */
+/* anchors often combined with list */
+
+
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.4em;
+  font-family: var(--list-font);
+}
+
+li + li {
+	margin-top: 0;
+}
+
+/* A elements that don't have a class get default styles */
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
+
+a {
+  text-decoration: none;
+  color: #1d7484; }
+  a:hover {
+    color: #982c61;
+    border-bottom: 2px solid #4a4a4a; }
+  a:visited {
+    color: #144f5a; 
+}
+
+/* TABLES */
+table {
+  text-align: justify;
+  width: 100%;
+  border-collapse: collapse; 
+}
+
+td, th {
+  padding: 0.5em;
+  border-bottom: var(--table-row-indicator); 
+}

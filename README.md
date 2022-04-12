@@ -41,7 +41,7 @@ cited from [Why Use Make](https://bost.ocks.org/mike/make/)
 **the GitHub CLI**: [gh](https://github.com/cli/cli). 
 
 **[podman](https://podman.io/podman)**: I am using the latest release v4. 
-To install see [getting-started](https://podman.io/getting-started/installation) 
+To install see [podman install instructions](https://podman.io/getting-started/installation) 
 
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
 
@@ -68,7 +68,6 @@ firefox http://example.com
 ```
 
 ## set hosts and enable rootless to operate on port 80
-
 
 In our local develpoment environment, with podman we are going to run a pod without root privileges.
 A [shortcoming of rootless podman](https://github.com/containers/podman/blob/main/rootless.md) 
@@ -97,6 +96,6 @@ echo '127.0.0.1   example.com' | \
 sudo tee -a /etc/hosts
 ```
 
-We have `make` target for the above code, so no need to type it in.
+We have `make init` target for the above code, so no need to type it in.
 
 
