@@ -15,3 +15,7 @@ jobs:
       run: sudo apt install w3m
     - name: xqerl up and flying 
       run: make up
+    - name: put example.com into '/etc/hosts'
+      run: make hosts
+    - name: bring xqerl down
+      run: make down

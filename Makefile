@@ -46,11 +46,11 @@ build: confs code data assets
 .PHONY: up
 up: or-up
 	$(DASH)
+	# access xqerl in the pods internal network
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	#echo && $(DASH)
 	podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
 	echo && $(DASH)
-
 
 .PHONY: podx
 podx: volumes # --publish 80:80 --publish 443:443
