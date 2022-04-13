@@ -1,0 +1,14 @@
+# https://docs.github.com/en/actions/learn-github-actions/expressions
+name: CI
+on:
+  push:
+    branches: 'main'
+  pull_request:
+    branches: 'main'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v3
+    - name: make up

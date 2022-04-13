@@ -70,6 +70,9 @@ make up
 ```
 
 You can run `make down` to bring the pod and the 2 running containers run down.
+
+### The .env file
+
 When running `make up` **make** will read from the `.env` file where it will pick up
 *startup* variables like
  - image-version tags: default is the latest versions
