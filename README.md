@@ -66,7 +66,8 @@ cd glider
 make images
 # 3. bring the pod up with two running containers
 #  - 'or' container: nginx as a reverse pr
-
+make up
+```
 
 
 
