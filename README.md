@@ -36,7 +36,7 @@ The goal is **remote** deployment to a single Google Compute Engine instance.
 This dockerized xQuery web application deployment will serve secure HTTPS web pages from your IP domain names
  By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), the setup is capable of serving multiple domains. --> 
 
-### Prerequisites
+## Prerequisites
 
 **Make**:
 
@@ -56,7 +56,7 @@ To install see [podman install instructions](https://podman.io/getting-started/i
 
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
 
-### Getting Started
+## Getting Started
 
 ```
 # 1. clone this repo and cd into the cloned dir
@@ -65,9 +65,35 @@ cd glider
 # 2. pull docker images
 make images
 # 3. bring the pod up with two running containers
-#  - 'or' container: nginx as a reverse pr
+#  - 'or' container: nginx as a reverse proxy
 make up
 ```
+
+You can run `make down` to bring the pod and the 2 running containers run down.
+When running `make up` **make** will read from the `.env` file where it will pick up
+*startup* variables like
+ - image-version tags: default is the latest versions
+ - what ports the pod will listen on: defaults are port 8080 and 8443 
+ - timezone: adjust for your timezone
+ - development domain: default is 'example.com'
+
+Apart from the timezone you can leave the .env file as is.
+
+## Running xqerl as a service
+
+You can set the pod to run as a systemd user service.
+A systemd user service is not ran as root but under a login user.
+This will mean the xqerl application server will be available 
+to you when the operating system boots.
+
+```
+make up
+make service
+# 
+reboot
+make service-status
+```
+
 
 
 

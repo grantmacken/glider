@@ -14,8 +14,8 @@ URI_GREET := $(URI)/xqerl
 URI_REST := $(URI)/db/
 URI_ASSETS := $(URI)/assets/
 # images
-XQ        := $(XQERL_IMAGE):$(XQERL_VER)
-OR        := $(PROXY_IMAGE):$(PROXY_VER)
+XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
+OR        := ghcr.io/grantmacken/podx-openresty:$(PROXY_VER)
 CERTBOT   := docker.io/certbot/dns-google
 CMARK     := ghcr.io/grantmacken/podx-cmark:$(GHPKG_CMARK_VER)
 MAGICK    := ghcr.io/grantmacken/podx-magick:$(GHPKG_MAGICK_VER)
@@ -159,7 +159,6 @@ volumes-clean:
 	#whoami | grep -q root
 	podman volume remove xqerl-code || true
 	podman volume remove xqerl-database || true
-	podman volume remove static-assets || true
 	podman volume remove static-assets || true
 	podman volume remove proxy-conf || true
 	podman volume remove letsencrypt || true
