@@ -13,7 +13,7 @@ mainModulesBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(wildcard src/code/*.xq
 
 # xquery constructors that can be stored as XDM items the xqerl db
 # these can be functions, maps or arrays we build here to do a compile check
-xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(shell fd . -e xq src/data))
+xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(shell find src/data -type f  -name '*.xq'))
 
 .PHONY: code code-deploy
 code: code-deploy
