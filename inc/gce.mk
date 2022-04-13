@@ -272,6 +272,7 @@ certs-proxy-mod: src/proxy/conf/proxy.conf
 	sed -i 's/ include basic.conf;/#include basic.conf;/' $<
 	sed -i 's/# include tls_server.conf;/include tls_server.conf;/' $<
 	sed -i 's/# include redirect.conf;/include redirect.conf;/' $<
+	$(make)
 	
 
 PHONY: certs-inspect

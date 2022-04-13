@@ -2,6 +2,9 @@
 
 >  Not to be confused with the Flying Squirrel.
 
+[![asciicast](https://asciinema.org/a/487137.svg)](https://asciinema.org/a/487137)
+
+
 Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
 
 xQuery 3.1 is the query language for building data driven web applications.
@@ -18,7 +21,7 @@ Code is a work in progress.
 Some stuff is pulled from other projects, and needs to be rewritten for this project.
 I try to take 'show not tell' approach,
 so work code will be run on 'github actions'
-and will be making some acsciicast.
+and will be making some asciicast.
 
 ## Aims 
 
@@ -56,20 +59,24 @@ To install see [podman install instructions](https://podman.io/getting-started/i
 ### Getting Started
 
 ```
-# 1. clone this repo and cd into dir
+# 1. clone this repo and cd into the cloned dir
 gh repo clone grantmacken/glider
 cd glider
-# 2. set hosts and enable rootless to operate on port 80
-make init
-# 3. pull docker images
-make-images
-# 4. bring the pod up with two running containers
-#  - 'or' container: nginx as a reverse proxy
-#  - 'xq' container: xqerl xQuery app server and database
-make-up
-# 5. run the pod as a service 
-make-service
-# 6. use `make` to build the example.com website from sources in src dir.
+# 2. pull docker images
+make images
+# 3. bring the pod up with two running containers
+#  - 'or' container: nginx as a reverse pr
+
+
+
+
+
+<!--
+
+
+
+```
+# 4. use `make` to build the example.com website from sources in src dir.
 make
 # 7. view the example.com website
 firefox http://example.com
@@ -105,3 +112,4 @@ sudo tee -a /etc/hosts
 ```
 
 We have `make init` target for the above code, so no need to type it in.
+--> 

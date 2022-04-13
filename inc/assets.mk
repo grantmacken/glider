@@ -17,7 +17,7 @@ imagesBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/images/*.png))
 assets: assets-deploy
 assets-deploy: _deploy/static-assets.tar 
 
-_deploy/static-assets.tar: $(stylesBuild) $(scriptsBuild) $(castsbuild) $(fontsBuild) 
+_deploy/static-assets.tar: $(stylesBuild) $(scriptsBuild) $(castsBuild) $(fontsBuild) 
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	# echo '##[  $(notdir $@) ]##' TODO $(iconsBuild) $(imagesBuild) 
 	podman volume export  $(basename $(notdir $@)) > $@

@@ -47,7 +47,7 @@ build: confs code data assets
 .PHONY: up
 up: or-up
 	$(DASH)
-	w3m -dump http://localhost
+	w3m -dump http://localhost:$(POD_PORT)
 	echo && $(DASH)
 
 .PHONY: podx
@@ -56,8 +56,8 @@ podx: volumes # --publish 80:80 --publish 443:443
 	#whoami | grep -q root
 	podman pod exists $(POD) || \
 		podman pod create \
-		--publish 80:80 \
-	  --publish 443:443 \
+		--publish $(POD_PORT):80 \
+	  --publish $(POD_TLS_PORT):443 \
 		--network podman \
 		--name $(@)
 
