@@ -121,17 +121,6 @@ podman top xq
 podman stats --no-stream
 ```
 
-## Building a web site based on a domain
-
-Lets use **example.com** as our example domain.
-Run `make hosts` to add  **example.com** to the '/etc/hosts' file
-
-After adjusting '/etc/host', a request to 'example.com:8080' will resolve
-in the same way a request to 'http://localhost:8080'
-
-```
-w3m -dump http://example.com:8080
-```
 ### A Recap
 
 In our pod we have two running containers
@@ -155,16 +144,146 @@ Our running containers have volume mounts:
  - static-assets volume: holds binary and unparsed text files in the container filesystem. 
 
 The above docker *mount* volumes can be seen as **deployment artefacts**.
-Volumes are the deployable release bundle, not docker images nor running container instances.
 
-When we develop xQuery applications with xqerl the **build process**
-we simply move stuff from a source into a docker Volume.
+# Site Building:
 
-### TODO! TO Be Continued
+Our xQuery application **build process** consists of simply adding stuff from a 
+source file into an appropiate docker Volume.
+
+The end product of a local build target is a docker volume exported as a tar.
+To put these tars into production on our remote server 
+we simply the import the tar into the the docker volume located on the remote server.
+
+## example.com
+
+Lets use **example.com** as our example domain.
+Run `make hosts` to add  **example.com** to the '/etc/hosts' file
+
+After adjusting '/etc/host', a request to 'example.com:8080' will resolve
+in the same way a request to 'http://localhost:8080'
+
+```
+w3m -dump http://example.com:8080
+```
+
+## on pod ports and belonging to a network 
+
+Our xqerl(xq) and nginx(or) containers are in a pod(podx).
+When we created our pod, we 
+   - published ports: `8080:80` for HTTP requests and '8433:80' for HTTPS requests
+   - set up network(podman) that the running containers will join.
+
+xqerl which listens on port 8081, is running in the internal 'podman' network
+so `http://example.com:8081` is not reachable outside the pod because port 8081
+is not an exposed published port for the pod.
+
+Outside of the pod, to reach xqerl all requests are via ngnix set up as a 
+[reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
+
+## Build Sources Piped Through a Build proccess
+
+When developing there is a another docker Volume mount we can have.
+This is a bind mount to our source files in a src dir. 
+
+```
+# --mount type=bind,destination=/usr/local/xqerl/src,source=./src,relabel=shared
+```
+
+This is only for local development of our xQuery application. 
+This bind volume will **not** be used when we deploy to a remote server.
+A tree view of the src folder reflects what gets stored into the respective docker volumes.
+
+```
+src
+├── assets => static-assets volume
+├── code   => xqerl-code volume
+├── data   => xqerl-code volume
+└── proxy
+    └── conf => proxy-conf volume
+```
+
+NOTE: source files are not directly copied into thier volumes.
+They are *build sources* which are *piped* through a build proccess,
+then stored into a volume.
+
+```
+# to build from sources just run
+make
+```
+
+Our default make target is `make build` so to 
+build from our src folder we just run `make`.
+
+
+
+The result of running `make` will be 
+ - a local web site served at http://example.com:8080.
+ - a \_deploy folder contain tars of our docker volumes
+
+
+
+TODO: watch target
+
+TODO: livereload 
+
+### xqerl-database volume: putting data into the xqerl database
+
+ - Source structured markup data like XML and JSON can be parsed and stored in 
+the xqerl database as XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
+It is worth noting that the xqerl database can store any XDM item type. 
+These XDM database items include document-nodes, maps, arrays, and even functions.
+ - If the data source is not marked up then the this data can be stored as unparsed text. 
+ - If the data source is binary then a link item pointing to the file location can be stored in the database.
+
+ It is worth reiterating that, structured markup data sources are parsed and loaded into the xqerl database as XDM items.
+
+ - a XML text when parsed is stored as an `instance of document-node()`
+ - JSON object when parsed stored as an `instance of map(*)`
+ - JSON array when parsed stored as an `instance of array(*)`
+ - CSV text when parsed stored as an `instance of array(*)`
+ - xQuery main module function:  when compiled stored as an `instance of function(*)`
+
+The URI of XDM items stored in the db can be retrieved by the the xQuery function`fn:uri-collection()`
+
+When items are stored as XDM items into the xqerl database the query power of xQuery 3.1 is amplified. 
+xQuery was originally designed to work with structured data in the context of a XML database. With xQuery 3.1 the xPath 
+xQuery data model is extended to include maps and arrays, so it is important that these items can be queried from the database.
+
+Proir to storing, the data can be linted, checked and preprocessed.
+Some examples:
+
+ - **XML text**: well formed check then store as document-node item
+ - **JSON** well formed check (jq) then store as map or array item
+ - **markdown** text: preprocess with cmark then store as document-node
+ - **xQuery main module function** compile check then store as function
+
+
+
+```
+src
+  ├── data
+  │   └── example.com
+  │       ├── default_tpl.xq
+  │       └── index.md
+```
+
+
+make data
+```
+ 
+
+ 
 
 
 <!--
 
+```
+src
+  └── code
+    ├── cm_dispatch.xqm =>  compiled xquery library module => stored in code-volume as beam file
+    ├── db-store.xq     =>  compile check for xquery main module - not stored
+    └── routes.xqm      =>  compiled restXQ library => cowboy routes stored in code-volume
+```
 
 
 ```
