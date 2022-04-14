@@ -94,11 +94,73 @@ make up
 make service
 # 
 reboot
-make service-status
 ```
 
+After reboot we can now use systemctl to 
+ - check service status
+ - stop the service
+ - start the service
 
+```
+# check service status
+make service-status
+# list containers ruuning in the pod
+podman ps --pod --all
+# stop the service
+make service-stop
+# list containers: 'xq' ond 'or' containers should now have exited
+podman ps --pod --all
+# restart the service
+# 'xq' ond 'or' containers should now be up
+podman ps --pod --all
+# check the xqerl container log 'xq'
+podman log xq
+# display the running processes of the container xq
+podman top xq
+# see what resource are being used in our pod
+podman stats --no-stream
+```
 
+## Building a web site based on a domain
+
+Lets use **example.com** as our example domain.
+Run `make hosts` to add  **example.com** to the '/etc/hosts' file
+
+After adjusting '/etc/host', a request to 'example.com:8080' will resolve
+in the same way a request to 'http://localhost:8080'
+
+```
+w3m -dump http://example.com:8080
+```
+### A Recap
+
+In our pod we have two running containers
+
+1. **xq**: this is a running instance of xqerl
+2. **or** this is the running nginx instance which is based on openresty
+   At the moment 'or' is acting as a reverse proxy for xqerl.
+   Later we will set it up as a
+    - proxy TLS termination point
+    - proxy cache server
+
+Our running containers have volume mounts:
+
+ **or**: has these volume mounts
+ - proxy-conf volume: holds nginx configuration files
+ - letsencypt volume: will hold TLS certs from letsencrypt
+
+**xq**: has these volume mounts
+ - xqerl-database volume: holds 'XDM data items' and 'link items' in the xqerl database
+ - xqerl-code volume: holds user main and library xQuery modules which are compiled into beam files
+ - static-assets volume: holds binary and unparsed text files in the container filesystem. 
+
+The above docker *mount* volumes can be seen as **deployment artefacts**.
+Volumes are the deployable release bundle, not docker images nor running container instances.
+
+When we develop xQuery applications with xqerl the **build process**
+we simply move stuff from a source into a docker Volume.
+
+### TODO! TO Be Continued
 
 
 <!--

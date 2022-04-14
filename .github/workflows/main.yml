@@ -15,7 +15,11 @@ jobs:
       run: sudo apt install w3m
     - name: xqerl up and flying 
       run: make up
-    - name: put example.com into '/etc/hosts'
+    - name: add example.com to '/etc/hosts' file
       run: make hosts
+    - name: check domain name resolution
+      run: w3m -dump http://localhost:8080
+    - name: build a xQuery web application
+      run: make confs
     - name: bring xqerl down
       run: make down
