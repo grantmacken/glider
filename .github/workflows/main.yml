@@ -19,6 +19,8 @@ jobs:
       run: make hosts
     - name: check domain name resolution
       run: w3m -dump http://example.com:8080
+    - name: build - data into xqerl database
+      run: make data
     - name: build - nginx configuration
       run: make confs
     - name: bring xqerl down
