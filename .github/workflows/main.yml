@@ -18,8 +18,8 @@ jobs:
     - name: add example.com to '/etc/hosts' file
       run: make hosts
     - name: check domain name resolution
-      run: w3m -dump http://localhost:8080
-    - name: build a xQuery web application
+      run: w3m -dump http://example.com:8080
+    - name: build - nginx configuration
       run: make confs
     - name: bring xqerl down
       run: make down

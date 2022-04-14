@@ -20,7 +20,8 @@ data-deploy: _deploy/xqerl-database.tar
 
 .PHONY: data-clean
 data-clean: ## clean "data" build artefacts
-	rm -f $(mdBuild) $(xmlBuild) $(xqBuild)
+	echo '##[ $@ ]##'
+	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
 .PHONY: data-list
 data-list:
@@ -36,14 +37,14 @@ _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild)
 	podman volume export  $(basename $(notdir $@)) > $@
 
 _build/data/%.md.headers: src/data/%.md
+	echo '##[ $(basename $(notdir $<)) ]##'
 	if podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
 		-I --header "Accept: application/xml" \
 		http://localhost:8081/db/$(*) | grep -q '200'
 	then
-	echo " - update cmark XML from markdown"
-	echo 'uri: http://localhost:8081/db/$(*)'
+	echo "xqerl database: update cmark XML from markdown"
 	cat $< |
 	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
 	sed -e '1,2d' 2>/dev/null |
@@ -56,8 +57,8 @@ _build/data/%.md.headers: src/data/%.md
 		http://localhost:8081/db/$(*) | grep -q '204'
 	touch $@ 
 	else
-	echo " - create cmark XML from markdown"
-	echo 'collection: http://localhost:8081/db/$(dir $(*))'
+	echo "xqerl database: cmark XML from markdown"
+	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
 	cat $< |
 	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
@@ -79,7 +80,7 @@ _build/data/%.md.headers: src/data/%.md
 	$(DASH)
 
 _build/data/%.xml.headers: src/data/%.xml
-	@echo '## $(notdir $<) ##'
+	echo '##[ $(basename $(notdir $<)) ]##'
 	mkdir -p $(dir $@)
 	$(DASH)
 	if grep -qoP 'HTTP/1.1 201 Created' $@
@@ -90,29 +91,17 @@ _build/data/%.xml.headers: src/data/%.xml
 	curl --silent --show-error --connect-timeout 1 --max-time 2 \
     --header "Accept: application/xml" \
 		$(shell grep -oP 'location: \K([^\s]+)' $@)
-	echo && $(DASH)
 	echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
 	else
 	bin/db-create $< | tee $@
 	grep -qoP 'HTTP/1.1 201 Created' $@
 	fi
-	# sleep 1
-	# curl --silent --show-error --connect-timeout 1 --max-time 2 \
- #    --header "Accept: application/xml" \
-	# 	$(shell grep -oP 'location: \K([^\s]+)' $@)
-	# sleep 1
-	#
-	#
 
 _build/data/%.xq.stored: src/data/%.xq
-	@echo '## $(notdir $<) ##'
+	echo '##[ $(basename $(notdir $<)) ]##'
+	echo " xqerl database: create/update xquery function"
 	mkdir -p $(dir $@)
-	$(DASH)
-	bin/compile $<
-	bin/db-store $<
+	bin/compile $< | grep -q 'compiled ok!'
+	bin/db-store $< &>/dev/null
 	mv src/store.xq  $@
-	sleep 1
-	if [ -e tiny-lr.pid ]; then
-	curl -s --ipv4  http://localhost:35729/changed?files=$*
-	fi
-	$(DASH)
+	# echo && $(DASH)

@@ -23,8 +23,9 @@ _deploy/static-assets.tar: $(stylesBuild) $(scriptsBuild) $(castsBuild) $(fontsB
 	podman volume export  $(basename $(notdir $@)) > $@
 
 PHONY: assets-clean
-assets-clean: 
-	rm -v $(stylesBuild) $(scriptsBuild) $(castsbuild) $(fontsBuild) $(iconsBuild) $(imagesBuild) || true 
+assets-clean:
+	echo '##[ $@ ]##'
+	rm -f $(stylesBuild) $(scriptsBuild) $(castsBuild) $(fontsBuild) $(iconsBuild) $(imagesBuild) || true 
 
 PHONY: styles 
 styles: $(stylesBuild)

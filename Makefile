@@ -43,6 +43,9 @@ include inc/*
 .PHONY: build
 build: confs code data assets
 
+.PHONY: build-clean
+build-clean: confs-clean code-clean data-clean assets-clean
+
 .PHONY: up
 up: or-up
 	$(DASH)
@@ -55,7 +58,6 @@ up: or-up
 .PHONY: podx
 podx: volumes # --publish 80:80 --publish 443:443
 	echo "##[ $(@) ##]"
-	#whoami | grep -q root
 	podman pod exists $(POD) || \
 		podman pod create \
 		--publish $(POD_PORT):80 \
@@ -103,10 +105,10 @@ xq-up: podx
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
 	fi
 
+
 .PHONY: or-up # 
 or-up: xq-up
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	if ! podman ps | grep -q $(OR)
 	then
 	podman run --pod $(POD) \
@@ -121,14 +123,12 @@ or-up: xq-up
 .PHONY: or-down
 or-down: #TODO use systemd instead
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	podman stop or || true
 	podman rm or || true
 
 .PHONY: xq-down
 xq-down: #TODO use systemd instead
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	echo "##[ $(@) ]##"
 	podman stop xq || true
 	podman rm xq || true
@@ -136,7 +136,6 @@ xq-down: #TODO use systemd instead
 .PHONY: images ## pull docker images
 images:
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	podman pull $(XQ)
 	podman pull $(OR)
 	podman pull $(W3M)
@@ -146,7 +145,6 @@ images:
 .PHONY: volumes
 volumes:
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	@podman volume exists xqerl-code || podman volume create xqerl-code
 	@podman volume exists xqerl-database || podman volume create xqerl-database
 	@podman volume exists static-assets || podman volume create static-assets
@@ -158,7 +156,6 @@ volumes:
 .PHONY: volumes-clean
 volumes-clean:
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	podman volume remove xqerl-code || true
 	podman volume remove xqerl-database || true
 	podman volume remove static-assets || true
@@ -168,7 +165,6 @@ volumes-clean:
 .PHONY: service
 service: 
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	mkdir -p $(HOME)/.config/systemd/user
 	rm -f *.service
 	podman generate systemd --files --name $(POD) 
@@ -200,7 +196,6 @@ service-stop:
 .PHONY: service-status
 service-status:
 	echo "##[ $(@) ]##"
-	#whoami | grep -q root
 	systemctl --user --no-pager status pod-podx.service
 	$(DASH)
 	# journalctl --no-pager -b CONTAINER_NAME=or

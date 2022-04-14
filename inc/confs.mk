@@ -15,10 +15,8 @@ confs-deploy: _deploy/proxy-conf.tar #  after confs-check
 
 .PHONY: confs-clean
 confs-clean:
-	@echo '## $(@) ##'
-	@rm -fv $(BuildConfs) _deploy/proxy-conf.tar
-	@#podman run --rm  --mount $(MountProxyConf) --entrypoint '["sh", "-c"]' $(OR) 'rm -fv $(SiteConfs)' || true
-	@#podman run --rm  --mount $(MountProxyConf) --entrypoint '["sh", "-c"]' $(OR) 'ls /opt/proxy/confs ' || true
+	echo '##[ $(@) ]##'
+	@rm -f $(BuildConfs) _deploy/proxy-conf.tar || true
 
 .PHONY: watch-confs
 watch-confs:

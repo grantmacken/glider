@@ -21,8 +21,8 @@ code-deploy: _deploy/xqerl-code.tar
 
 .PHONY: code-clean
 code-clean: ## remove `make code` build artifacts
-	echo '## $(@) ##'
-	rm -v  $(libraryModulesBuild)  $(mainModulesBuild) $(xqDataBuild) || true
+	echo '##[ $@ ]##'
+	rm -f  $(libraryModulesBuild)  $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
 
 _deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild)
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
