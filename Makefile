@@ -46,12 +46,6 @@ build: confs code data assets
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
 
-.PHONY: import-tars
-import-tars: 
-	        podman run --rm --mount $(MountProxyConf) \
-		--entrypoint "[\"sh\",\"-c\"]" $(OR) "cat /opt/proxy/conf/reverse_proxy.conf"'
-
-
 .PHONY: up
 up: or-up
 	$(DASH)

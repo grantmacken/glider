@@ -53,8 +53,6 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: volume-tars
-    - name: pull docker images
-      run: make images
     - name: import tars
       run: |
         podman create volume proxy-conf
@@ -65,4 +63,5 @@ jobs:
         podman volume import xqerl-database xqerl-database.tar
         podman create volume xqerl-code
         podman volume import xqerl-code xqerl-code.tar
-
+    - name: pull docker images
+      run: make images
