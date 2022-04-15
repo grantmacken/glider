@@ -35,6 +35,23 @@ jobs:
       run: ls -al _deploy
     - name: bring xqerl down
       run: make down
+    - name: Upload built artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: volume-tars
+        path: _deploy/
     - name: TODO
       run: |
         echo 'export _deploy, the import volume in _deploy in another job, check result'
+  check:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v3
+    - name: Download built artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: volume-tars
+    - name: list tars
+      run: ls -l .
