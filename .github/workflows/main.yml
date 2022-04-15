@@ -53,5 +53,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: volume-tars
-    - name: list tars
-      run: ls -l .
+    - name: pull docker images
+      run: make images
+    - name: import tars
+      run: podman volume import proxy-conf proxy-conf.tar
+
