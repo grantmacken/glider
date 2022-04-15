@@ -49,19 +49,24 @@ jobs:
     steps:
     - name: checkout repo
       uses: actions/checkout@v3
+    - name: add example.com to '/etc/hosts' file
+      run: make hosts
     - name: Download built artifact
       uses: actions/download-artifact@v3
       with:
         name: volume-tars
+    - name: make volumes
+      run: make volumes
     - name: import tars
       run: |
-        podman create volume proxy-conf
         podman volume import proxy-conf proxy-conf.tar
-        podman create volume static-assets
         podman volume import static-assets static-assets.tar
-        podman create volume xqerl-database
         podman volume import xqerl-database xqerl-database.tar
-        podman create volume xqerl-code
         podman volume import xqerl-code xqerl-code.tar
     - name: pull docker images
       run: make images
+    - name: xqerl up and flying
+      run: make up
+    - name: check - web view
+      run: w3m -dump http://example.com:8080
+
