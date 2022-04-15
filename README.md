@@ -147,14 +147,11 @@ The above docker *mount* volumes can be seen as **deployment artefacts**.
 
 # Site Building:
 
-Our xQuery application **build process** consists of simply adding stuff from a 
-source file into an appropiate docker Volume.
-
 The end product of a local build target is a docker volume exported as a tar.
-To put these tars into production on our remote server 
-we simply the import the tar into the the docker volume located on the remote server.
+It is these tars that are put into production on our remote servers.
+To do this, on our remote host we import the tar into the the docker volume hosted on the remote host.
 
-## example.com
+## An Example Domain
 
 Lets use **example.com** as our example domain.
 Run `make hosts` to add  **example.com** to the '/etc/hosts' file
@@ -166,7 +163,7 @@ in the same way a request to 'http://localhost:8080'
 w3m -dump http://example.com:8080
 ```
 
-## on pod ports and belonging to a network 
+## On Pods, Ports and Belonging to a Network 
 
 Our xqerl(xq) and nginx(or) containers are in a pod(podx).
 When we created our pod, we 
@@ -182,15 +179,16 @@ Outside of the pod, to reach xqerl all requests are via ngnix set up as a
 
 ## Build Sources Piped Through a Build proccess
 
-When developing there is a another docker Volume mount we can have.
-This is a bind mount to our source files in a src dir. 
+When developing on our local host there is a another docker Volume mount we can have.
+This is a bind mount to our source files in this repos src dir. 
 
 ```
 # --mount type=bind,destination=/usr/local/xqerl/src,source=./src,relabel=shared
 ```
 
-This is only for local development of our xQuery application. 
+Note: This is only for local development of our xQuery application. 
 This bind volume will **not** be used when we deploy to a remote server.
+
 A tree view of the src folder reflects what gets stored into the respective docker volumes.
 
 ```
@@ -204,17 +202,11 @@ src
 
 NOTE: source files are not directly copied into thier volumes.
 They are *build sources* which are *piped* through a build proccess,
-then stored into a volume.
+then stored into a volume. To trigger the build process we just run
 
 ```
-# to build from sources just run
 make
 ```
-
-Our default make target is `make build` so to 
-build from our src folder we just run `make`.
-
-
 
 The result of running `make` will be 
  - a local web site served at http://example.com:8080.
