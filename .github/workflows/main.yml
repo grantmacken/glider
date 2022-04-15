@@ -27,7 +27,14 @@ jobs:
       run: make code
     - name: build - static assets into static assets volume
       run: make assets
-    - name: build - nginx configuration
+    - name: build - nginx configuration into proxy-conf volume
       run: make confs
+    - name: check - web view
+      run: w3m -dump http://example.com:8080
+    - name:  check - deploy dir
+      run: ls -al _deploy
     - name: bring xqerl down
       run: make down
+    - name: TODO
+      run: |
+        echo 'export _deploy, the import volume in _deploy in another job, check result'
