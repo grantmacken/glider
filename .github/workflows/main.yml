@@ -56,5 +56,13 @@ jobs:
     - name: pull docker images
       run: make images
     - name: import tars
-      run: podman volume import proxy-conf proxy-conf.tar
+      run: |
+        podman create volume proxy-conf
+        podman volume import proxy-conf proxy-conf.tar
+        podman create volume static-assets
+        podman volume import static-assets static-assets.tar
+        podman create volume xqerl-database
+        podman volume import xqerl-database xqerl-database.tar
+        podman create volume xqerl-code
+        podman volume import xqerl-code xqerl-code.tar
 
