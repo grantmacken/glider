@@ -13,7 +13,9 @@ jobs:
       uses: actions/checkout@v3
     - name: install utilities
       run: sudo apt install w3m
-    - name: xqerl up and flying 
+    - name: pull docker images
+      run: make images
+    - name: xqerl up and flying
       run: make up
     - name: add example.com to '/etc/hosts' file
       run: make hosts
