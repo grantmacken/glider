@@ -37,6 +37,7 @@ _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild)
 	podman volume export  $(basename $(notdir $@)) > $@
 
 _build/data/%.md.headers: src/data/%.md
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(basename $(notdir $<)) ]##'
 	if podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
@@ -80,8 +81,8 @@ _build/data/%.md.headers: src/data/%.md
 	$(DASH)
 
 _build/data/%.xml.headers: src/data/%.xml
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(basename $(notdir $<)) ]##'
-	mkdir -p $(dir $@)
 	$(DASH)
 	if grep -qoP 'HTTP/1.1 201 Created' $@
 	then
@@ -98,6 +99,7 @@ _build/data/%.xml.headers: src/data/%.xml
 	fi
 
 _build/data/%.xq.stored: src/data/%.xq
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(basename $(notdir $<)) ]##'
 	echo " xqerl database: create/update xquery function"
 	mkdir -p $(dir $@)
