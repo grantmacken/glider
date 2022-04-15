@@ -25,6 +25,8 @@ jobs:
       run: make data
     - name: build - xQuery library modules into  xqerl-code volume
       run: make code
+    - name: build - static assets into static assets volume
+      run: make assets
     - name: build - nginx configuration
       run: make confs
     - name: bring xqerl down
