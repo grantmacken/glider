@@ -99,9 +99,9 @@ xq-up: podx
 	  --mount type=bind,destination=/usr/local/xqerl/src,source=$(CURDIR)/src,relabel=shared \
 		--tz=$(TIMEZONE) \
 		--detach $(XQ)
-	sleep 1
+	sleep 2
 	podman ps -a --pod | grep -oP '$(XQ)(.+)$$'
-	sleep 1
+	sleep 3 # add bigger delay
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
 	fi
 
