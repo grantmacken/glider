@@ -21,11 +21,13 @@ jobs:
       run: |
         podman ps --pod --all
         printf %60s | tr ' ' '-' && echo
-        podman log xq
+        podman logs xq
         printf %60s | tr ' ' '-' && echo
         podman top xq
         printf %60s | tr ' ' '-' && echo
         podman stats --no-stream
+        printf %60s | tr ' ' '-' && echo
+        make code-library-list
         printf %60s | tr ' ' '-' && echo
 
   #
