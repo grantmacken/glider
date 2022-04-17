@@ -25,8 +25,8 @@ data-clean: ## clean "data" build artefacts
 
 .PHONY: data-domain-list
 data-domain-list:
-	echo '##[ $@ ]##'
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://S(DEV_DOMAIN)' => uri-collection()) => string-join('&#10')\" ))."
+	echo '##[ $@ ]##' #&#10
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DEV_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
 
 .PHONY: data-list
 data-list:
