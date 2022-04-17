@@ -9,7 +9,7 @@ function($map as map(*)) as element() {
       },
     element link { 
       attribute rel {"stylesheet"},
-      attribute href { "/assets/styles/index.css"},
+      attribute href { "/assets/styles/sakura.css"},
       attribute type {"text/css"}
     },  
     element link { 
