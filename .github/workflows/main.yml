@@ -11,10 +11,15 @@ jobs:
     steps:
     - name: checkout repo
       uses: actions/checkout@v3
+    - name: podman info
+      run: |
+        podman version
     - name: install utilities
       run: sudo apt install w3m
     - name: pull docker images
       run: make images
+    - name: list docker images
+      run: podman image list
     - name: xqerl up and flying
       run: make up
     - name: checks - ps, log, top

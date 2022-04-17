@@ -7,11 +7,11 @@
 # xqm for library modules
 # add restXQ routes library to compile last
 ###########################
-routesList  := src/code/routes.xqm
-libList := $(filter-out src/code/routes.xqm,$(wildcard src/code/*.xqm))
+restXQList  := src/code/routes.xqm
+libList := $(filter-out $(restXQList),$(wildcard src/code/*.xqm))
 libraryModulesBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(libList)) 
 mainModulesBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(wildcard src/code/*.xq))
-
+restXQBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(restXQList)) 
 # xquery constructors that can be stored as XDM items the xqerl db
 # these can be functions, maps or arrays we build here to do a compile check
 xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(shell find src/data -type f  -name '*.xq'))
@@ -25,7 +25,7 @@ code-clean: ## remove `make code` build artifacts
 	echo '##[ $@ ]##'
 	rm -f  $(libraryModulesBuild)  $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
 
-_deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild)
+_deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) $(restXQBuild)
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	# echo '##[  $(notdir $@) ]##'
 	podman volume export  $(basename $(notdir $@)) > $@
