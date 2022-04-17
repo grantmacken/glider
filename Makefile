@@ -8,11 +8,13 @@ MAKEFLAGS += --silent
 .DEFAULT_GOAL := build
 
 include .env
-URI := http://localhost:8081
-URI2 := http://192.168.1.102:8080
+
+URI := http://$(DEV_DOMAIN):$(DEV_PORT)
 URI_GREET := $(URI)/xqerl
 URI_REST := $(URI)/db/
 URI_ASSETS := $(URI)/assets/
+DUMP = w3m -dump http://$(DEV_DOMAIN):$(DEV_PORT)/$1
+
 # images
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
 OR        := ghcr.io/grantmacken/podx-openresty:$(PROXY_VER)
@@ -101,10 +103,9 @@ xq-up: podx
 		--detach $(XQ)
 	sleep 2
 	podman ps -a --pod | grep -oP '$(XQ)(.+)$$'
-	sleep 3 # add bigger delay
+	sleep 2 # add bigger delay
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
 	fi
-
 
 .PHONY: or-up # 
 or-up: xq-up
@@ -228,6 +229,6 @@ rootless:
 
 .PHONY: hosts
 hosts:
-	grep -q '127.0.0.1   example.com' /etc/hosts || 
-	echo '127.0.0.1   example.com' | 
+	grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts || 
+	echo '127.0.0.1   $(DEV_DOMAIN)' | 
 	sudo tee -a /etc/hosts

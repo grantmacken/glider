@@ -17,7 +17,7 @@ jobs:
       run: make images
     - name: xqerl up and flying
       run: make up
-    - name: checks - ps, log, top, stats
+    - name: checks - ps, log, top
       run: |
         podman ps --pod --all
         printf %60s | tr ' ' '-' && echo
@@ -30,13 +30,15 @@ jobs:
         make code-library-list
   #   - name: check - web view
   #     run: w3m -dump http://example.com:8080
-  #   - name: add example.com to '/etc/hosts' file
-  #     run: make hosts
-  #   - name: check domain name resolution
-  #     run: w3m -dump http://example.com:8080
-  #   - name: build - data as XDM items into xqerl-database volume
-  #     run: make data
-  #   - name: build - xQuery library modules into  xqerl-code volume
+    - name: add example.com to '/etc/hosts' file
+      run: make hosts
+    - name: check domain name resolution
+      run:  source .env && w3m -dump http://${DEV_DOMAIN}:${DEV_PORT}
+    - name: build - data as XDM items into xqerl-database volume
+      run: make data
+    - name: check - XDM items in database
+      run: make data-domain-list
+        #   - name: build - xQuery library modules into  xqerl-code volume
   #     run: make code
   #   - name: build - static assets into static assets volume
   #     run: make assets

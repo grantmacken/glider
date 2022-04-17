@@ -23,13 +23,18 @@ data-clean: ## clean "data" build artefacts
 	echo '##[ $@ ]##'
 	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
+.PHONY: data-domain-list
+data-domain-list:
+	echo '##[ $@ ]##'
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://S(DEV_DOMAIN)' => uri-collection()) => string-join('&#10')\" ))."
+
 .PHONY: data-list
 data-list:
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		http://example.com/db
 	# echo '##[ $@ ]##'
-	#podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://example.com' => uri-collection()) => string-join(' ')\" ))."
+	#podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://example.com' => uri-collection()) => string-join('&#10;')\" ))."
 
 _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild)	
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
