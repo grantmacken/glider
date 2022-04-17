@@ -9,7 +9,7 @@ MAKEFLAGS += --silent
 
 include .env
 
-		URI := http://$(DEV_DOMAIN):$(DEV_PORT)
+URI := http://$(DEV_DOMAIN):$(DEV_PORT)
 URI_GREET := $(URI)/xqerl
 URI_REST := $(URI)/db/
 URI_ASSETS := $(URI)/assets/
@@ -48,13 +48,32 @@ build: confs code data assets
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
 
+.PHONY: view
+view:
+	$(call Dump,)
+
+.PHONY: view-index
+view-index:
+	$(call Dump,index)
+
+
+.PHONY: view-greater
+view-greater:
+	$(call Dump,xqerl)
+
+.PHONY: view-db
+view-db:
+	$(call Dump,db)
+
+
 .PHONY: up
 up: or-up
 	$(DASH)
 	# access xqerl in the pods internal network
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	#echo && $(DASH)
-	podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
+	# podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
+	podman ps --all --pod
 	echo && $(DASH)
 
 .PHONY: podx

@@ -52,16 +52,26 @@ jobs:
     - name: build - nginx configuration into proxy-conf volume
       run: make confs
     - name: check - web view
-      run: w3m -dump http://example.com:8080
-  #   - name:  check - deploy dir
-  #     run: ls -al _deploy
-  #   - name: bring xqerl down
-  #     run: make down
-  #   - name: Upload built artifact
-  #     uses: actions/upload-artifact@v3
-  #     with:
-  #       name: volume-tars
-  #       path: _deploy/
+      run: make view
+    - name:  check - deploy dir
+      run: ls -al _deploy
+    - name: bring pod down
+      run: make down
+    - name: bring pod up
+      run: make up
+    - name: xqerl-database Volume check - db has items
+      run: make view-db
+    - name: xqerl-code Volume check -  listed library modules
+      run: make code-library-list
+    - name: restXQ routing check
+      run: make view-index
+    - name: bring xqerl down
+      run: make down
+    - name: Upload built artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: volume-tars
+        path: _deploy/
   #   - name: TODO
   #     run: |
   #       echo 'export _deploy, the import volume in _deploy in another job, check result'
