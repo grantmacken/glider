@@ -24,13 +24,10 @@ jobs:
         podman logs xq
         printf %60s | tr ' ' '-' && echo
         podman top xq
-        printf %60s | tr ' ' '-' && echo
-        podman stats --no-stream
+        #printf %60s | tr ' ' '-' && echo
+        #podman stats --no-stream
         printf %60s | tr ' ' '-' && echo
         make code-library-list
-        printf %60s | tr ' ' '-' && echo
-
-  #
   #   - name: check - web view
   #     run: w3m -dump http://example.com:8080
   #   - name: add example.com to '/etc/hosts' file
