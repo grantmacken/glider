@@ -9,11 +9,11 @@ MAKEFLAGS += --silent
 
 include .env
 
-URI := http://$(DEV_DOMAIN):$(DEV_PORT)
+		URI := http://$(DEV_DOMAIN):$(DEV_PORT)
 URI_GREET := $(URI)/xqerl
 URI_REST := $(URI)/db/
 URI_ASSETS := $(URI)/assets/
-DUMP = w3m -dump http://$(DEV_DOMAIN):$(DEV_PORT)/$1
+Dump = w3m -dump $(URI)/$1
 
 # images
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)

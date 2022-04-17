@@ -2,3 +2,4 @@ _*
 .git
 .secrets
 src/proxy/conf/certificates.conf
+src/proxy/certificates.txt

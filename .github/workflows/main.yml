@@ -38,8 +38,10 @@ jobs:
       run: make data
     - name: check - XDM items in database
       run: make data-domain-list
-        #   - name: build - xQuery library modules into  xqerl-code volume
-  #     run: make code
+    - name: build - xQuery library modules into  xqerl-code volume
+      run: make code
+    - name: check - installed xQuery library modules
+      run: make code-library-list
   #   - name: build - static assets into static assets volume
   #     run: make assets
   #   - name: build - nginx configuration into proxy-conf volume

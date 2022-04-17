@@ -28,11 +28,16 @@ data-domain-list:
 	echo '##[ $@ ]##' #&#10
 	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DEV_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
 
-.PHONY: data-list
-data-list:
+.PHONY: data-in-pod-list
+data-in-pod-list:
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
-		http://example.com/db
+		http://$(DEV_DOMAIN)/db
+
+.PHONY: data-list
+data-list:
+	$(call Dump,db)
+
 	# echo '##[ $@ ]##'
 	#podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://example.com' => uri-collection()) => string-join('&#10;')\" ))."
 
