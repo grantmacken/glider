@@ -150,10 +150,6 @@ on our remote depoloyment host.
 The xqerl-code and xqerl-database are volumes which allow us to persist xqerl application
 state across host reboots or stoping and and restarting the xqerl application running in the container.
 
-# Site Building
-
-TODO
-
 ## An Example Domain
 
 Lets use **example.com** as our example domain.
@@ -207,7 +203,7 @@ NOTE: source files are not directly copied into thier volumes.
 They are *build sources* which are *piped* through a build proccess,
 then stored into a volume. To trigger the build process we just run
 
-## Edit Sources, Build and Check
+##The Build Cycle: Edit => Build => Check
 
 The build cycle:
  1. edit the source files
@@ -249,7 +245,7 @@ When items are stored as XDM items into the xqerl database the query power of xQ
 xQuery was originally designed to work with structured data in the context of a XML database. With xQuery 3.1 the xPath 
 xQuery data model is extended to include maps and arrays, so it is important that these items can be queried from the database.
 
-Proir to storing, the data can be linted, checked and preprocessed.
+Prior to storing, the data can be linted, checked and preprocessed.
 Some examples:
 
  - **XML text**: well formed check (xmllint) then store as document-node item
@@ -257,13 +253,42 @@ Some examples:
  - **markdown** text: preprocess with cmark then store as document-node
  - **xQuery main module function** compile check then store as function
 
+ Our example data sources
 
 ```
 src
   ├── data
   │   └── example.com
-  │       ├── default_tpl.xq
-  │       └── index.md
+  │       ├── default_tpl.xq => into db - stored as XDM function item
+  │       └── index.md       => into db - stored as XDM document-node
+```
+
+When the source file becomes a XDM item stored in the the database,
+*by convention* the database item identifier(URI) will have no extension.  
+
+```
+src
+  ├── data
+  │   └── example.com
+  │       ├── default_tpl.xq => db identifier: http://example.com/default_tpl
+  │       └── index.md       => db identifier: http://example.com/index
+```
+
+Note: The `src/data/{DOMAIN}` directory structure is just a build process convenience. 
+There other ways of getting data into the database and you don't have to follow 
+the 'no extension' convention.
+
+Once the data is in the database you can see what 
+data is stored under our development domain.
+
+The xQuery expression to get a list of URI in the database is
+
+```
+'http://example.com' => uri-collection() => string-join('&#10;')
+```
+
+```
+make data-domain-list
 ```
 
 
@@ -272,7 +297,6 @@ src
 
 
 <!--
-
 ```
 src
   └── code

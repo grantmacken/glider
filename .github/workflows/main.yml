@@ -22,15 +22,13 @@ jobs:
       run: |
         podman ps --pod --all
         printf %60s | tr ' ' '-' && echo
-        podman logs xq
+        podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
         #printf %60s | tr ' ' '-' && echo
         #podman stats --no-stream
         printf %60s | tr ' ' '-' && echo
         make code-library-list
-  #   - name: check - web view
-  #     run: w3m -dump http://example.com:8080
     - name: add example.com to '/etc/hosts' file
       run: make hosts
     - name: check domain name resolution
@@ -47,8 +45,8 @@ jobs:
       run: make assets
     - name: build - nginx configuration into proxy-conf volume
       run: make confs
-    - name: check - web view
-      run: make view
+    - name: check result
+      run: w3m -dump http://${DEV_DOMAIN}:${DEV_PORT}
     - name:  check - deploy dir
       run: ls -al _deploy
     - name: bring pod down

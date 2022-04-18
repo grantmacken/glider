@@ -84,7 +84,7 @@ up: or-up
 	# podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
 	podman ps --all --pod
 	echo && $(DASH)
-	$(call Dump,index)
+	w3m -dump http://localhost:$(DEV_PORT)
 	echo && $(DASH)
 
 .PHONY: images ## pull docker images
