@@ -46,7 +46,7 @@ jobs:
     - name: build - nginx configuration into proxy-conf volume
       run: make confs
     - name: check result
-      run: source .env && w3m -dump http://${DEV_DOMAIN}:${DEV_PORT}
+      run: make dump
     - name:  check - deploy dir
       run: ls -al _deploy
     - name: bring pod down
@@ -58,7 +58,7 @@ jobs:
     - name: xqerl-code Volume check -  listed library modules
       run: make code-library-list
     - name: restXQ routing check
-      run: make view-index
+      run: make dump
     - name: bring xqerl down
       run: make down
     - name: Upload built artifact
