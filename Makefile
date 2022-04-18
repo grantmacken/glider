@@ -48,14 +48,21 @@ build: confs code data assets
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
 
+.PHONY: watch
+watch:
+	while true; do \
+        clear && $(MAKE) --silent code 2>/dev/null || true; \
+        inotifywait -qre close_write ./src || true; \
+    done
+
+
 .PHONY: view
 view:
-	$(call Dump,)
+	firefox $(URI)
 
 .PHONY: view-index
 view-index:
 	$(call Dump,index)
-
 
 .PHONY: view-greater
 view-greater:
@@ -64,7 +71,6 @@ view-greater:
 .PHONY: view-db
 view-db:
 	$(call Dump,db)
-
 
 .PHONY: up
 up: or-up
@@ -75,6 +81,40 @@ up: or-up
 	# podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
 	podman ps --all --pod
 	echo && $(DASH)
+
+
+
+.PHONY: images ## pull docker images
+images: 
+	echo "##[ $(@) ]##"
+	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
+	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
+	podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
+	podman images | grep -oP 'podx-cmark(.+)$(GHPKG_CMARK_VER)' || podman pull $(CMARK)
+
+.PHONY: volumes
+volumes: images
+	echo "##[ $(@) ]##"
+	@podman volume exists xqerl-code || podman volume create xqerl-code
+	@podman volume exists xqerl-database || podman volume create xqerl-database
+	@podman volume exists static-assets || podman volume create static-assets
+	@podman volume exists proxy-conf || podman volume create proxy-conf
+	@podman volume exists letsencrypt || podman volume create letsencrypt
+
+.PHONY: volumes-clean
+volumes-clean:
+	echo "##[ $(@) ]##"
+	podman volume remove -f xqerl-code || true
+	podman volume remove -f xqerl-database || true
+	podman volume remove -f static-assets || true
+	#podman volume remove proxy-conf || true
+	#podman volume remove letsencrypt || true
+
+.PHONY: volumes-import
+volumes-import:
+	echo "##[ $(@) ]##"
+	if [ -f _deploy/proxy-conf.tar ] ; then podman volume import proxy-conf _deploy/proxy-conf.tar ;fi
+	if [ -f _deploy/static-assets.tar ] ; then podman volume import static-assets _deploy/static-assets.tar ;fi
 
 .PHONY: podx
 podx: volumes # --publish 80:80 --publish 443:443
@@ -97,8 +137,9 @@ down:
 	podman ps --all --pod
 
 .PHONY: clean
-clean: confs-clean data-clean code-clean assets-clean down
+clean: down
 	echo "##[ $(@) ]##" 
+	rm -fr _build
 	@systemctl --user stop pod-podx.service || true
 	@systemctl --user disable container-xq.service || true
 	@systemctl --user disable container-or.service || true
@@ -149,38 +190,15 @@ or-down: #TODO use systemd instead
 .PHONY: xq-down
 xq-down: #TODO use systemd instead
 	echo "##[ $(@) ]##"
-	echo "##[ $(@) ]##"
 	podman stop xq || true
 	podman rm xq || true
 
-.PHONY: images ## pull docker images
-images:
-	echo "##[ $(@) ]##"
-	podman pull $(XQ)
-	podman pull $(OR)
-	podman pull $(W3M)
-	podman pull $(CURL)
-	podman pull $(CMARK)
 
-.PHONY: volumes
-volumes:
-	echo "##[ $(@) ]##"
-	@podman volume exists xqerl-code || podman volume create xqerl-code
-	@podman volume exists xqerl-database || podman volume create xqerl-database
-	@podman volume exists static-assets || podman volume create static-assets
-	@podman volume exists proxy-conf || podman volume create proxy-conf
-	@podman volume exists letsencrypt || podman volume create letsencrypt
-	@# podman volume exists lualib || podman volume create lualib
-	@#podman volume ls
+	#	#podman pull $(OR)
+	#podman pull $(W3M)
+	#podman pull $(CURL)
+	#podman pull $(CMARK)
 
-.PHONY: volumes-clean
-volumes-clean:
-	echo "##[ $(@) ]##"
-	podman volume remove xqerl-code || true
-	podman volume remove xqerl-database || true
-	podman volume remove static-assets || true
-	podman volume remove proxy-conf || true
-	podman volume remove letsencrypt || true
 
 .PHONY: service
 service: 
