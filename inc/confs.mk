@@ -18,19 +18,11 @@ confs-clean:
 	echo '##[ $(@) ]##'
 	@rm -f $(BuildConfs) _deploy/proxy-conf.tar || true
 
-.PHONY: watch-confs
-watch-confs:
-	@while true; do \
-        clear && $(MAKE) --silent confs; \
-        inotifywait -qre close_write . || true; \
-    done
-
 _deploy/proxy-conf.tar: $(BuildConfs)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[  $(notdir $@) ]##'
-	podman volume export  $(basename $(notdir $@)) > $@
+	podman volume export proxy-conf > $@
 	podman exec or openresty -p /opt/proxy/ -c /opt/proxy/conf/proxy.conf -s reload
-
 
 .PHONY: confs-list
 confs-list:

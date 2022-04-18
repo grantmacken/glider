@@ -20,7 +20,7 @@ assets-deploy: _deploy/static-assets.tar
 _deploy/static-assets.tar: $(stylesBuild) $(scriptsBuild) $(castsBuild) $(fontsBuild) 
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	# echo '##[  $(notdir $@) ]##' TODO $(iconsBuild) $(imagesBuild) 
-	podman volume export  $(basename $(notdir $@)) > $@
+	podman volume export static-asset > $@
 
 PHONY: assets-clean
 assets-clean:

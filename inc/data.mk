@@ -14,9 +14,8 @@ jsonBuild := $(patsubst src/%.json,_build/%.json.headers,$(jsonList))
 xmlBuild := $(patsubst src/%.xml,_build/%.xml.headers,$(xmlList))
 xqBuild := $(patsubst src/%.xq,_build/%.xq.stored,$(xqList))
 
-.PHONY: data data-deploy
-data: data-deploy ## from src store XDM data items in db
-data-deploy: _deploy/xqerl-database.tar
+.PHONY: data
+data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store XDM data items in db
 
 .PHONY: data-clean
 data-clean: ## clean "data" build artefacts
@@ -37,14 +36,6 @@ data-in-pod-list:
 .PHONY: data-list
 data-list:
 	$(call Dump,db)
-
-	# echo '##[ $@ ]##'
-	#podman exec xq xqerl eval "binary_to_list(xqerl:run(\"('http://example.com' => uri-collection()) => string-join('&#10;')\" ))."
-
-_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild)	
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	# echo '##[  $(notdir $@) ]##'
-	podman volume export  $(basename $(notdir $@)) > $@
 
 _build/data/%.md.headers: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

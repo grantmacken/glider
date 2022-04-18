@@ -16,28 +16,13 @@ restXQBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(restXQList))
 # these can be functions, maps or arrays we build here to do a compile check
 xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(shell find src/data -type f  -name '*.xq'))
 
-.PHONY: code code-deploy
-code: code-deploy
-code-deploy: _deploy/xqerl-code.tar 
+.PHONY: code
+code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) $(restXQBuild)
 
 .PHONY: code-clean
 code-clean: ## remove `make code` build artifacts
 	echo '##[ $@ ]##'
 	rm -f  $(libraryModulesBuild)  $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
-
-_deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) $(restXQBuild)
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	# echo '##[  $(notdir $@) ]##'
-	podman volume export  $(basename $(notdir $@)) > $@
- 
- #$(mainModulesBuild) $(xqDataBuild)
-
-.PHONY: watch-code
-watch-code:
-	while true; do \
-        clear && $(MAKE) --silent code 2>/dev/null || true; \
-        inotifywait -qre close_write ./src/code || true; \
-    done
 
 .PHONY: code-library-list
 code-library-list: ## list availaiable library modules

@@ -134,22 +134,25 @@ In our pod we have two running containers
 
 Our running containers have volume mounts:
 
- **or**: has these volume mounts
- - proxy-conf volume: holds nginx configuration files
- - letsencypt volume: will hold TLS certs from letsencrypt
-
 **xq**: has these volume mounts
  - xqerl-database volume: holds 'XDM data items' and 'link items' in the xqerl database
  - xqerl-code volume: holds user main and library xQuery modules which are compiled into beam files
  - static-assets volume: holds binary and unparsed text files in the container filesystem. 
 
-The above docker *mount* volumes can be seen as **deployment artefacts**.
+ **or**: has these volume mounts
+ - proxy-conf volume: holds nginx configuration files
+ - letsencrypt volume: will hold TLS certs from letsencrypt
 
-# Site Building:
+The proxy-conf, letsencrypt and static-assets volumes can be seen as **deployment artefacts**.
+These volumes contain files, which when exported an a tar archive can be imported to volumes
+on our remote depoloyment host.
 
-The end product of a local build target is a docker volume exported as a tar.
-It is these tars that are put into production on our remote servers.
-To do this, on our remote host we import the tar into the the docker volume hosted on the remote host.
+The xqerl-code and xqerl-database are volumes which allow us to persist xqerl application
+state across host reboots or stoping and and restarting the xqerl application running in the container.
+
+# Site Building
+
+TODO
 
 ## An Example Domain
 
@@ -204,17 +207,22 @@ NOTE: source files are not directly copied into thier volumes.
 They are *build sources* which are *piped* through a build proccess,
 then stored into a volume. To trigger the build process we just run
 
-```
-make
-```
+## Edit Sources, Build and Check
 
-The result of running `make` will be 
- - a local web site served at http://example.com:8080.
- - a \_deploy folder contain tars of our docker volumes
+The build cycle:
+ 1. edit the source files
+ 2. run `make`
+ 3. check the result
 
+The result of running `make` will be a local web site served at
+http://example.com:8080.
 
+After the first run you can set a watch target.
+In another terminal window, cd into this repo directory 
+and run `make watch`
 
-TODO: watch target
+This will watch for file writes in the src dir and  
+run the `make build` target when file writes occur.
 
 TODO: livereload 
 
@@ -224,7 +232,7 @@ TODO: livereload
 the xqerl database as XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
 It is worth noting that the xqerl database can store any XDM item type. 
 These XDM database items include document-nodes, maps, arrays, and even functions.
- - If the data source is not marked up then the this data can be stored as unparsed text. 
+ - If the data source is not marked up then this data can be stored as unparsed text. 
  - If the data source is binary then a link item pointing to the file location can be stored in the database.
 
  It is worth reiterating that, structured markup data sources are parsed and loaded into the xqerl database as XDM items.
@@ -244,11 +252,10 @@ xQuery data model is extended to include maps and arrays, so it is important tha
 Proir to storing, the data can be linted, checked and preprocessed.
 Some examples:
 
- - **XML text**: well formed check then store as document-node item
+ - **XML text**: well formed check (xmllint) then store as document-node item
  - **JSON** well formed check (jq) then store as map or array item
  - **markdown** text: preprocess with cmark then store as document-node
  - **xQuery main module function** compile check then store as function
-
 
 
 ```
@@ -260,11 +267,8 @@ src
 ```
 
 
-make data
-```
- 
 
- 
+
 
 
 <!--

@@ -55,6 +55,9 @@ watch:
         inotifywait -qre close_write ./src || true; \
     done
 
+.PHONY: dump
+dump:
+	$(call Dump,$(ROUTE))
 
 .PHONY: view
 view:
@@ -81,8 +84,8 @@ up: or-up
 	# podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
 	podman ps --all --pod
 	echo && $(DASH)
-
-
+	$(call Dump,index)
+	echo && $(DASH)
 
 .PHONY: images ## pull docker images
 images: 
