@@ -8,6 +8,11 @@ MAKEFLAGS += --silent
 .DEFAULT_GOAL := build
 
 include .env
+# GIT_USER="$(shell git config --get user.name )"
+# GIT_REMOTE_ORIGIN_URl="$(shell git config --get remote.origin.url )"
+# GIT_REPO_FULL_NAME="$(shell echo $(GIT_REMOTE_ORIGIN_URl) | sed -e 's/git@github.com://g' | sed -e 's/\.git//g' )"
+# GIT_REPO_NAME="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f2 )"
+# GIT_REPO_OWNER_LOGIN="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f1 )"
 
 URI := http://$(DEV_DOMAIN):$(DEV_PORT)
 URI_GREET := $(URI)/xqerl
@@ -59,22 +64,6 @@ watch:
 dump:
 	$(call Dump,$(ROUTE))
 
-.PHONY: view
-view:
-	firefox $(URI)
-
-.PHONY: view-index
-view-index:
-	$(call Dump,index)
-
-.PHONY: view-greater
-view-greater:
-	$(call Dump,xqerl)
-
-.PHONY: view-db
-view-db:
-	$(call Dump,db)
-
 .PHONY: up
 up: or-up
 	$(DASH)
@@ -92,7 +81,7 @@ images:
 	echo "##[ $(@) ]##"
 	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
 	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
-	podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
+	# podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
 	podman images | grep -oP 'podx-cmark(.+)$(GHPKG_CMARK_VER)' || podman pull $(CMARK)
 
 .PHONY: volumes
@@ -195,13 +184,6 @@ xq-down: #TODO use systemd instead
 	echo "##[ $(@) ]##"
 	podman stop xq || true
 	podman rm xq || true
-
-
-	#	#podman pull $(OR)
-	#podman pull $(W3M)
-	#podman pull $(CURL)
-	#podman pull $(CMARK)
-
 
 .PHONY: service
 service: 

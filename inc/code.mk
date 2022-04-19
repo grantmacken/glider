@@ -7,8 +7,8 @@
 # xqm for library modules
 # add restXQ routes library to compile last
 ###########################
-restXQList  := src/code/routes.xqm
-libList := $(filter-out $(restXQList),$(wildcard src/code/*.xqm))
+restXQList  := $(wildcard src/code/restXQ/*.xqm)
+libList := $(wildcard src/code/*.xqm)
 libraryModulesBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(libList)) 
 mainModulesBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(wildcard src/code/*.xq))
 restXQBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(restXQList)) 

@@ -4,7 +4,6 @@
 
 [![asciicast](https://asciinema.org/a/487137.svg)](https://asciinema.org/a/487137)
 
-
 Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
 
 xQuery 3.1 is the query language for building data driven web applications.
@@ -15,12 +14,35 @@ Erlang applications have a reputation for being long running, fault tolerant and
 This project uses a xqerl docker image, so you
 do not need to locally install erlang or even know much about erlang.
 
+# glider: A template repo
+
+This template contains ...
+some boilerplate files in the src directory 
+which are used to create an example website.
+Initial source files use 'example.com' domain.
+
+```
+make up
+make hosts
+make
+w3m -dump http://example.com
+```
+
+<!--
+To create a site based on domain you own.
+As an example lets use the 'markup.nz' domain 
+
+1 .env file: change 'DEV_DOMAIN=example.com' to 'DEV_DOMAIN=markup.nz'
+-->
+
+
+TODO
 ## WIP note
 
 Code is a work in progress.
 Some stuff is pulled from other projects, and needs to be rewritten for this project.
 I try to take 'show not tell' approach,
-so work code will be run on 'github actions'
+so working code will be run on 'github actions'
 and will be making some asciicast.
 
 ## Aims 
@@ -62,13 +84,11 @@ To install see [podman install instructions](https://podman.io/getting-started/i
 # 1. clone this repo and cd into the cloned dir
 gh repo clone grantmacken/glider
 cd glider
-# 2. pull docker images
-make images
-# 3. bring the pod up with two running containers
+# 2. bring the pod up with two running containers
 #  - 'or' container: nginx as a reverse proxy
+#  - 'xq' container: the xqerl application
 make up
 ```
-
 You can run `make down` to bring the pod and the 2 running containers run down.
 
 ### The .env file
@@ -90,9 +110,7 @@ This will mean the xqerl application server will be available
 to you when the operating system boots.
 
 ```
-make up
 make service
-# 
 reboot
 ```
 
@@ -145,7 +163,7 @@ Our running containers have volume mounts:
 
 The proxy-conf, letsencrypt and static-assets volumes can be seen as **deployment artefacts**.
 These volumes contain files, which when exported an a tar archive can be imported to volumes
-on our remote depoloyment host.
+on our remote deployment host.
 
 The xqerl-code and xqerl-database are volumes which allow us to persist xqerl application
 state across host reboots or stoping and and restarting the xqerl application running in the container.
@@ -201,7 +219,9 @@ src
 
 NOTE: source files are not directly copied into thier volumes.
 They are *build sources* which are *piped* through a build proccess,
-then stored into a volume. To trigger the build process we just run
+then stored into a volume. To trigger the build process we just run 
+the default make target `make`. 
+Running `make` will build or website from sources in the 'scr' directory
 
 ##The Build Cycle: Edit => Build => Check
 
@@ -260,7 +280,7 @@ src
   ├── data
   │   └── example.com
   │       ├── default_tpl.xq => into db - stored as XDM function item
-  │       └── index.md       => into db - stored as XDM document-node
+/  │       └── index.md       => into db - stored as XDM document-node
 ```
 
 When the source file becomes a XDM item stored in the the database,
@@ -286,12 +306,14 @@ The xQuery expression to get a list of URI in the database is
 ```
 'http://example.com' => uri-collection() => string-join('&#10;')
 ```
+This expression needs to run in the context of the runner docker instance
+ using 'podman exec xq xqerl eval' ...
+
+ The make alias shortcut to lists database uri items for our domain is
 
 ```
 make data-domain-list
 ```
-
-
 
 
 
