@@ -14,11 +14,13 @@ include .env
 # GIT_REPO_NAME="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f2 )"
 # GIT_REPO_OWNER_LOGIN="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f1 )"
 
-URI := http://$(DEV_DOMAIN):$(DEV_PORT)
-URI_GREET := $(URI)/xqerl
-URI_REST := $(URI)/db/
-URI_ASSETS := $(URI)/assets/
-Dump = w3m -dump $(URI)/$1
+# URI := http://$(DEV_DOMAIN):$(DEV_PORT)
+# URI_GREET := $(URI)/xqerl
+# URI_REST := $(URI)/db/
+# URI_ASSETS := $(URI)/assets/
+ROUTE ?= /index
+DOMAIN ?= $(DEV_DOMAIN)
+Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 
 # images
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
@@ -62,18 +64,21 @@ watch:
 
 .PHONY: dump
 dump:
-	$(call Dump,$(ROUTE))
+	$(call Dump,$(DOMAIN),$(ROUTE))
 
 .PHONY: up
 up: or-up init
 	$(DASH)
 	# access xqerl in the pods internal network
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
-	#echo && $(DASH)
-	# podman run --rm --name req2 --pod $(POD) $(W3M) -dump http://localhost:80
 	podman ps --all --pod
 	echo && $(DASH)
-	w3m -dump http://localhost:$(DEV_PORT)
+	if grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts
+	then 
+	$(call Dump,$(DOMAIN),$(ROUTE))
+	else
+	$(call Dump,localhost,$(ROUTE))
+	fi
 	echo && $(DASH)
 
 .PHONY: images ## pull docker images
@@ -81,7 +86,7 @@ images:
 	echo "##[ $(@) ]##"
 	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
 	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
-	# podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
+	podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
 	podman images | grep -oP 'podx-cmark(.+)$(GHPKG_CMARK_VER)' || podman pull $(CMARK)
 	podman images | grep -oP 'podx-curl(.+)$(CURL_VER)' || podman pull $(CURL)
 
@@ -177,10 +182,6 @@ or-up: xq-up
 		--detach $(OR)
 	podman ps -a --pod | grep -oP '$(OR)(.+)$$'
 	fi
-
-
-
-
 
 .PHONY: or-down
 or-down: #TODO use systemd instead

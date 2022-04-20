@@ -14,8 +14,6 @@ jobs:
     - name: podman info
       run: |
         podman version
-    - name: install utilities
-      run: sudo apt install w3m
     - name: xqerl up and flying
       run: make up
     - name: checks - ps, log, top
@@ -25,35 +23,37 @@ jobs:
         podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
-        printf %60s | tr ' ' '-' && echo
-        make code-library-list
     - name: add example.com to '/etc/hosts' file
       run: make hosts
-    - name: build - data as XDM items into xqerl-database volume
-      run: make data
-    - name: check - XDM items in database
-      run: make data-domain-list
-    - name: build - xQuery library modules into  xqerl-code volume
-      run: make code
-    - name: check - installed xQuery library modules
-      run: make code-library-list
-    - name: build - static assets into static assets volume
-      run: make assets
-    - name: build - nginx configuration into proxy-conf volume
-      run: make confs
-    - name: check result
-      run: make dump
-    - name:  check - deploy dir
-      run: ls -al _deploy
-    - name: bring pod down
-      run: make down
-    - name: bring pod up
-      run: make up
-    - name: xqerl-database Volume check - db has items
-      run: make data-domain-list
-    - name: xqerl-code Volume check -  listed library modules
-      run: make code-library-list
-    - name: restXQ routing check
-      run: make dump
-    - name: bring xqerl down
-      run: make down
+    - name: build website from souces
+      run: make hosts
+
+
+    # - name: build - data as XDM items into xqerl-database volume
+    #   run: make data
+    # - name: check - XDM items in database
+    #   run: make data-domain-list
+    # - name: build - xQuery library modules into  xqerl-code volume
+    #   run: make code
+    # - name: check - installed xQuery library modules
+    #   run: make code-library-list
+    # - name: build - static assets into static assets volume
+    #   run: make assets
+    # - name: build - nginx configuration into proxy-conf volume
+    #   run: make confs
+    # - name: check result
+    #   run: make dump
+    # - name:  check - deploy dir
+    #   run: ls -al _deploy
+    # - name: bring pod down
+    #   run: make down
+    # - name: bring pod up
+    #   run: make up
+    # - name: xqerl-database Volume check - db has items
+    #   run: make data-domain-list
+    # - name: xqerl-code Volume check -  listed library modules
+    #   run: make code-library-list
+    # - name: restXQ routing check
+    #   run: make dump 
+    # - name: bring xqerl down
+    #   run: make down
