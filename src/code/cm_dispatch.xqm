@@ -1,4 +1,4 @@
-module namespace _ = 'http://example.com/#cm_dispatch';
+module namespace _ = 'http://xq/#cm_dispatch';
 declare namespace cm ="http://commonmark.org/xml/1.0";
 
 declare

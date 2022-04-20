@@ -83,6 +83,7 @@ images:
 	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
 	# podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
 	podman images | grep -oP 'podx-cmark(.+)$(GHPKG_CMARK_VER)' || podman pull $(CMARK)
+	podman images | grep -oP 'podx-curl(.+)$(CURL_VER)' || podman pull $(CURL)
 
 .PHONY: volumes
 volumes: images
@@ -239,8 +240,6 @@ service-clean:
 	popd
 	@systemctl --user daemon-reload
 
-.PHONY: init
-init:  rootless hosts
 
 .PHONY: rootless
 rootless:
@@ -252,5 +251,47 @@ rootless:
 .PHONY: hosts
 hosts:
 	grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts || 
-	echo '127.0.0.1   $(DEV_DOMAIN)' | 
-	sudo tee -a /etc/hosts
+	echo '127.0.0.1   $(DEV_DOMAIN)' |
+	sudo tee -a /etc/host
+
+.PHONY: init
+init:  data-init code-init
+
+data-init: src/data/$(DEV_DOMAIN)/index.md src/data/$(DEV_DOMAIN)/default_layout.xq
+code-init: src/code/restXQ/$(DEV_DOMAIN).xqm
+
+.PHONY: init-clean
+init-clean:  data-init-clean code-init-clean
+
+code-init-clean: 
+	rm -v src/code/restXQ/$(DEV_DOMAIN).xqm || true
+
+
+data-init-clean: 
+	echo '##[ $@ ]##'
+	rm -v src/data/$(DEV_DOMAIN)/index.md || true
+	rm -v src/data/$(DEV_DOMAIN)/default_layout.xq || true
+
+src/code/restXQ/$(DEV_DOMAIN).xqm: export restXQ_tpl:=$(restXQ_tpl)
+src/code/restXQ/$(DEV_DOMAIN).xqm:
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $(notdir $@) ]##'
+	echo "$${restXQ_tpl}"  > $@
+	ls -l $@
+
+src/data/$(DEV_DOMAIN)/index.md: export index_md:=$(index_md)
+src/data/$(DEV_DOMAIN)/index.md:
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $(notdir $@) ]##'
+	echo "$${index_md}"  > $@
+	ls -l $@
+
+src/data/$(DEV_DOMAIN)/default_layout.xq: export default_layout:=$(default_layout)
+src/data/$(DEV_DOMAIN)/default_layout.xq:
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $(notdir $@) ]##'
+	echo "$${default_layout}"  > $@
+	ls -l $@
+
+
+

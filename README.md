@@ -33,8 +33,9 @@ To create a site based on domain you own.
 As an example lets use the 'markup.nz' domain 
 
 1 .env file: change 'DEV_DOMAIN=example.com' to 'DEV_DOMAIN=markup.nz'
+2 make hosts
+3 make domain
 -->
-
 
 TODO
 ## WIP note

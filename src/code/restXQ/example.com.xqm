@@ -1,12 +1,7 @@
 module namespace _ = 'http://example.com/#routes';
-declare namespace rest = "http://exquery.org/ns/restxq";
-declare namespace http = "http://expath.org/ns/http-client";
-declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
-declare namespace err = "http://www.w3.org/2005/xqt-errors";
 declare namespace cm ="http://commonmark.org/xml/1.0";
-import module namespace cmark = "http://example.com/#cm_dispatch";
+import module namespace cmark = "http://xq/#cm_dispatch";
 
-(: https://datatracker.ietf.org/doc/html/rfc7807 :)
 declare
   %rest:path("/example.com/{$ITEM}")
   %rest:GET
@@ -22,18 +17,18 @@ function _:erewhon($ITEM){
           'item':  _:dbItem($uri)}
   return
     if ( fn:doc-available( $uri  )) 
-    then  
+    then
       let $key := 'document'
       let $value := $uri => doc()
       return
         map:put($resMap ,$key, $value) =>
         _:getContent() =>
         _:getFrontMatter() => 
-        _:layout()
+        _:pageLayout()
     else _:notFound($resMap) 
   } catch * {(
     _:svrErr(
-       map { 'uri': 'http://example.com/' || $ITEM, 
+		map { 'uri': 'http://' || 'example.com:/' || $ITEM, 
              'problem' : 'xQuery dynamic error',
              'code' : $err:code, 
              'description' : $err:description
@@ -77,29 +72,40 @@ then map:merge(($map, $fm ))
 else map:put( $map, 'problem', 'unable to get frontmatter')
 };
 
-declare function _:layout( $map as map(*)) {
+declare function _:pageLayout( $map as map(*)) {
 if ( map:contains( $map, 'problem') )
 then $map  => _:svrErr()
 else 
 let $dbItemPath := concat( $map?collection ,'/',$map?layout ) 
 let $dbCollection :=  $map?collection => uri-collection()
-let $defaultLayout := concat($map?collection,'/default_tpl' )
+let $defaultLayout := concat($map?collection,'/default_layout' )
 return
 if ( $dbItemPath = $dbCollection ) then
   let $dbFunctionItem := $dbItemPath => db:get()
   return 
     if ( $dbFunctionItem instance of function(*) ) 
     then ( _:resHeader( map { 'status': '200', 'message': 'OK' } ),$map => $dbFunctionItem())
-    else _:svrErr( map:put($map,'problem','db item is not a xQuery function'))
+    else _:svrErr( map:put($map,'problem',``[
+ - xqerl database XDM item: `{$dbItemPath}` is not a XDM function
+-  a XDM function item in needed to render this page
+ ]``))
 else (: try the default layout function for collection:)
 if ( $defaultLayout = $dbCollection ) then
   let $dbFunctionItem := $defaultLayout  => db:get()
   return 
     if ( $dbFunctionItem instance of function(*) ) 
     then ( _:resHeader( map { 'status': '200', 'message': 'OK' } ),$map => $dbFunctionItem())
-    else _:svrErr( map:put($map,'problem','db item is not a xQuery function'))
+    else 
+    _:svrErr( map:put($map,'problem',``[
+ - xqerl database XDM item: `{$defaultLayout}` is not a XDM function
+-  a XDM function item in needed to render this page
+ ]``))
 else (: give up :)
-_:svrErr( map:put($map,'problem','could not fin an layout xQuery function to render page'))
+_:svrErr( map:put($map,'problem', 
+``[
+ - xqerl database does not contain XDM item: `{$dbItemPath}`
+-  this XDM function item is need to render this page
+ ]``))
 };
 
 declare function _:dbCollection( $uri ){
@@ -123,7 +129,7 @@ _:problemBody( map:put($map, 'problem', ``[ could not find document at `{ $map?u
 
 declare function _:svrErr( $map as map(*)) as item()+ {(
 _:resHeader( map { 'status': '500', 'message': 'Internal Server Error' }),
- _:problemBody(map:put($map,'problem','xqerl thrown error'))
+ _:problemBody( map:put($map,'problem_title','server error: xqerl thrown error') )
 )};
 
 declare function _:problemBody( $map as map(*)) {
