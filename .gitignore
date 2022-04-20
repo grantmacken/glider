@@ -1,5 +1,9 @@
 _*
 .git
 .secrets
+# src artefacts created by make
 src/proxy/conf/certificates.conf
 src/proxy/certificates.txt
+# src artefacts 'example.com'
+/src/code/restXQ/example.com.xqm
+/src/data/example.com
