@@ -29,8 +29,6 @@ jobs:
         make code-library-list
     - name: add example.com to '/etc/hosts' file
       run: make hosts
-    - name: check domain name resolution
-      run:  source .env && w3m -dump http://${DEV_DOMAIN}:${DEV_PORT}
     - name: build - data as XDM items into xqerl-database volume
       run: make data
     - name: check - XDM items in database
