@@ -18,9 +18,7 @@ include .env
 # URI_GREET := $(URI)/xqerl
 # URI_REST := $(URI)/db/
 # URI_ASSETS := $(URI)/assets/
-ROUTE ?= /index
-DOMAIN ?= $(DEV_DOMAIN)
-Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
+
 
 # images
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
@@ -41,6 +39,10 @@ MountProxyConf   := type=volume,target=/opt/proxy/conf,source=proxy-conf
 MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
 DASH = printf %60s | tr ' ' '-' && echo
 
+
+ROUTE ?= /index
+DOMAIN ?= $(DEV_DOMAIN)
+Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 # ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(XQ)
 
 .help: help
@@ -262,7 +264,9 @@ hosts:
 	grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts || 
 	echo '127.0.0.1   $(DEV_DOMAIN)' |
 	sudo tee -a /etc/hosts
+	$(DASH)
 	cat  /etc/hosts
+	$(DASH)
 
 .PHONY: hosts-remove
 hosts-remove:

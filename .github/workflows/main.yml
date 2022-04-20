@@ -23,20 +23,18 @@ jobs:
         podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
-    - name: add example.com to '/etc/hosts' file
-      run: make hosts
     - name: build site from sources
       run: make
     - name: check - installed xQuery library modules
       run: make code-library-list
     - name: check - XDM items in xqerl database
       run: make data-domain-list
-    - name: check - w3m browser dump
-      run: make dump
     - name:  check - deploy dir
       run: ls -al _deploy
     - name: bring pod down
       run: make down
+    - name: add example.com to '/etc/hosts' file
+      run: make hosts
     - name: bring pod up
       run: make up
     - name: xqerl-database Volume check - db has items
