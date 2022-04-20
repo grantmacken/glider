@@ -261,7 +261,7 @@ rootless:
 hosts:
 	grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts || 
 	echo '127.0.0.1   $(DEV_DOMAIN)' |
-	sudo tee -a /etc/host
+	sudo tee -a /etc/hosts
 
 .PHONY: init
 init: data-init code-init

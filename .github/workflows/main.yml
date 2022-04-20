@@ -25,7 +25,7 @@ jobs:
         podman top xq
     - name: add example.com to '/etc/hosts' file
       run: make hosts
-    - name: build website from souces
+    - name: build site from sources
       run: make
     - name: check - installed xQuery library modules
       run: make code-library-list
@@ -33,29 +33,18 @@ jobs:
       run: make data-domain-list
     - name: check - w3m browser dump
       run: make dump
-    - name: bring xqerl down
+    - name:  check - deploy dir
+      run: ls -al _deploy
+    - name: bring pod down
       run: make down
-    #   run: make down
+    - name: bring pod up
+      run: make up
+    - name: xqerl-database Volume check - db has items
+      run: make data-domain-list
+    - name: xqerl-code Volume check -  listed library modules
+      run: make code-library-list
+    - name: restXQ routing check
+      run: make dump
+    - name: bring pod down
+      run: make down
 
-    # - name: build - data as XDM items into xqerl-database volume
-    #   run: make data-domain-list
-    # - name: build - xQuery library modules into  xqerl-code volume
-    #   run: make code
-    # - name: build - static assets into static assets volume
-    #   run: make assets
-    # - name: build - nginx configuration into proxy-conf volume
-    #   run: make confs
-    # - name: check result
-    #   run: make dump
-    # - name:  check - deploy dir
-    #   run: ls -al _deploy
-    # - name: bring pod down
-    #   run: make down
-    # - name: bring pod up
-    #   run: make up
-    # - name: xqerl-database Volume check - db has items
-    #   run: make data-domain-list
-    # - name: xqerl-code Volume check -  listed library modules
-    #   run: make code-library-list
-    # - name: restXQ routing check
-    #   run: make dump 
