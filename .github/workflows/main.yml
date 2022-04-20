@@ -59,8 +59,3 @@ jobs:
       run: make dump
     - name: bring xqerl down
       run: make down
-    # - name: Upload built artifact
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: volume-tars
-    #     path: _deploy/
