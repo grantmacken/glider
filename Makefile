@@ -65,7 +65,7 @@ dump:
 	$(call Dump,$(ROUTE))
 
 .PHONY: up
-up: or-up
+up: or-up init
 	$(DASH)
 	# access xqerl in the pods internal network
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
@@ -132,7 +132,11 @@ down:
 .PHONY: clean
 clean: down
 	echo "##[ $(@) ]##" 
+	# rm artefacts from 'build' target
 	rm -fr _build
+	# rm artefacts from 'init' target
+	rm -v src/data/$(DEV_DOMAIN)/*  || true
+	rm -v src/code/restXQ/$(DEV_DOMAIN).xqm  || true
 	@systemctl --user stop pod-podx.service || true
 	@systemctl --user disable container-xq.service || true
 	@systemctl --user disable container-or.service || true
@@ -173,6 +177,10 @@ or-up: xq-up
 		--detach $(OR)
 	podman ps -a --pod | grep -oP '$(OR)(.+)$$'
 	fi
+
+
+
+
 
 .PHONY: or-down
 or-down: #TODO use systemd instead
@@ -255,7 +263,7 @@ hosts:
 	sudo tee -a /etc/host
 
 .PHONY: init
-init:  data-init code-init
+init: data-init code-init
 
 data-init: src/data/$(DEV_DOMAIN)/index.md src/data/$(DEV_DOMAIN)/default_layout.xq
 code-init: src/code/restXQ/$(DEV_DOMAIN).xqm
@@ -265,7 +273,6 @@ init-clean:  data-init-clean code-init-clean
 
 code-init-clean: 
 	rm -v src/code/restXQ/$(DEV_DOMAIN).xqm || true
-
 
 data-init-clean: 
 	echo '##[ $@ ]##'
