@@ -29,6 +29,8 @@ jobs:
       run: make code-library-list
     - name: check - XDM items in xqerl database
       run: make data-domain-list
+    - name: restXQ routing check
+      run: make curl
     - name:  check - deploy dir
       run: ls -al _deploy
     - name: bring pod down

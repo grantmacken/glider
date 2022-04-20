@@ -43,7 +43,15 @@ DASH = printf %60s | tr ' ' '-' && echo
 ROUTE ?= /index
 DOMAIN ?= $(DEV_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
-# ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(XQ)
+	
+CONNECT_TO_OR := --connect-to xq:80:xq:$(DEV_PORT)
+CONNECT_TO_XQ := --connect-to xq:80:xq:$(DEV_PORT)
+CRL := podman run --pod $(POD) --rm  $(CURL)
+
+
+ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
+
+
 
 .help: help
 help: 
@@ -67,6 +75,16 @@ watch:
 .PHONY: dump
 dump:
 	$(call Dump,$(DOMAIN),$(ROUTE))
+
+
+curl: 
+	$(DASH)
+	curl --silent --show-error  \
+		--resolve $(DEV_DOMAIN):$(DEV_PORT):127.0.0.1 \
+		--connect-timeout 1 \
+		--max-time 2 \
+		http://$(DEV_DOMAIN):$(DEV_PORT)$(ROUTE)
+	echo && $(DASH)
 
 .PHONY: up
 up: or-up init
