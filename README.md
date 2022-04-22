@@ -98,10 +98,42 @@ When running `make up` **make** will read from the `.env` file where it will pic
 *startup* variables like
  - image-version tags: default is the latest versions
  - what ports the pod will listen on: defaults are port 8080 and 8443 
- - timezone: adjust for your timezone
+ - timezone: adjust for your timezone 
  - development domain: default is 'example.com'
 
-Apart from the timezone you can leave the .env file as is.
+### An Example Domain
+
+The default domain is **example.com** which is specified in the .env file
+
+If you run `make hosts` the make target will use the DOMAIN value in the .env to
+create an entry to your '/etc/hosts' file,
+
+To remove the entry use `make hosts-remove` 
+
+After adjusting '/etc/host', a request to 'example.com:8080' will resolve
+in the same way a request to 'http://localhost:8080' does.
+
+You don't have to do this, but it makes life a bit easier
+
+### Switching Domains
+
+To switch develpment to a domain you control, change the DEV_DOMAIN to your domain then run
+ the `make init` target.The target will create some some boilerplate src files for your domain.
+Below we will use 'markup.nz' as an example domain.
+
+```
+make init
+```
+this generates
+ 1. data files 
+  - 'src/data/markup.nz/index.md': a markdown document
+  - 'src/data/markup.nz/default_layout.xq': a xQuery main module
+ 2. a code file:  'src/code/restXQ/markup.nz.xqm', xQuery library module which will set the restXQ endpoints for the domain.
+
+When we run `make` which is our *build* target,
+ 1. the *code* file will be compiled and set the restXQ endpoints
+ 2. the *data* files will be stored as XDM items in the xqerl database.
+
 
 ## Running xqerl as a service
 
@@ -168,18 +200,6 @@ on our remote deployment host.
 
 The xqerl-code and xqerl-database are volumes which allow us to persist xqerl application
 state across host reboots or stoping and and restarting the xqerl application running in the container.
-
-## An Example Domain
-
-Lets use **example.com** as our example domain.
-Run `make hosts` to add  **example.com** to the '/etc/hosts' file
-
-After adjusting '/etc/host', a request to 'example.com:8080' will resolve
-in the same way a request to 'http://localhost:8080'
-
-```
-w3m -dump http://example.com:8080
-```
 
 ## On Pods, Ports and Belonging to a Network 
 
