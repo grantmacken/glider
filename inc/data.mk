@@ -99,12 +99,49 @@ _build/data/%.xml.headers: src/data/%.xml
 	grep -qoP 'HTTP/1.1 201 Created' $@
 	fi
 
+
 _build/data/%.xq.stored: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(basename $(notdir $<)) ]##'
-	echo " xqerl database: create/update xquery function"
-	mkdir -p $(dir $@)
-	bin/compile $< | grep -q 'compiled ok!'
-	bin/db-store $< &>/dev/null
-	mv src/store.xq  $@
-	# echo && $(DASH)
+	echo " xqerl database: xquery function"
+	echo 'collection: http://$(dir $(*))'
+	echo 'resource: $(basename $(notdir $<))'
+	File=/home/$(shell echo $(*) | sed 's%/%_%' ).xq
+	if podman ps -a | grep -q $(XQ)
+	then
+	echo '##[ $(notdir $<) ]##'
+	podman cp $< xq:/home/
+	podman exec xq xqerl eval '
+	case xqerl:compile("/home/$(notdir $<)") of
+		Err when is_tuple(Err), element(1, Err) == xqError -> 
+			["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
+		Mod when is_atom(Mod) -> 
+			["$<:1:I: compiled ok! "];
+			_ -> 
+			io:format(["$<:1:E: unknown error"])
+	end.' | jq -r '.[]'
+	podman cp src/code/db-store.xq xq:/home/
+	echo -n ' - db function item stored: '
+	podman exec xq xqerl eval '
+	Arg1 = list_to_binary("/home/$(notdir $<)"),
+	Arg2 = list_to_binary("http://$(dir $(*))$(basename $(notdir $<))"),
+	Args = #{<<"src">> => Arg1, <<"uri">> => Arg2},
+	case xqerl:compile("/home/db-store.xq") of
+		Mod when is_atom(Mod) -> 
+		case Mod:main(Args) of
+			Bin when is_binary(Bin) -> 
+			  File = "/home/$(shell echo $(*) | sed 's%/%_%' ).xq",
+				file:write_file(File,binary_to_list(Bin)),
+				xqerl:run(xqerl:compile(File))
+				;
+			_ -> false
+		end;
+		_ -> false
+		end.'
+	fi
+	podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
+	echo -n ' - db identifier: '
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." | 
+	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))'
+	
+
+

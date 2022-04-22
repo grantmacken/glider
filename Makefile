@@ -60,7 +60,7 @@ help:
 include inc/*
 
 .PHONY: build
-build: confs code data assets
+build: code data assets confs 
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
@@ -155,7 +155,7 @@ down:
 	podman ps --all --pod
 
 .PHONY: clean
-clean: down
+clean: down init-clean
 	echo "##[ $(@) ]##" 
 	# rm artefacts from 'build' target
 	rm -fr _build
@@ -180,7 +180,6 @@ xq-up: podx
 	then
 	podman run --name xq --pod $(POD) \
 		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
-	  --mount type=bind,destination=/usr/local/xqerl/src,source=$(CURDIR)/src,relabel=shared \
 		--tz=$(TIMEZONE) \
 		--detach $(XQ)
 	sleep 2
@@ -188,6 +187,8 @@ xq-up: podx
 	sleep 2 # add bigger delay
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
 	fi
+
+# --mount type=bind,destination=/usr/local/xqerl/src,source=$(CURDIR)/src,relabel=shared \
 
 .PHONY: or-up # 
 or-up: xq-up

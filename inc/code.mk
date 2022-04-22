@@ -35,33 +35,55 @@ code-library-list: ## list availaiable library modules
 
 _build/code/%.xqm.txt: src/code/%.xqm
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $<) ]##'
 	if podman ps -a | grep -q $(XQ)
 	then
-	# podman exec xq xqerl eval 'xqerl:compile("$<").'
-	bin/compile $< | tee $@
-	echo
+	echo '##[ $(notdir $<) ]##'
+	podman cp $< xq:/home/
+	podman exec xq xqerl eval '
+	case xqerl:compile("/home/$(notdir $<)") of
+		Err when is_tuple(Err), element(1, Err) == xqError -> 
+			["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
+		Info when is_atom(Info) -> 
+			["$<:1:I: compiled ok! "];
+			_ -> 
+			io:format(["$<:1:E: unknown error"])
+	end.' | jq -r '.[]' | tee $@
 	grep -q :I: $@
 	fi
 
 _build/code/%.xq.txt: src/code/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $<) ]##'
+	echo '##[  $<  ]##'
 	if podman ps -a | grep -q $(XQ)
 	then
-	bin/compile $< | tee $@
-	echo
+	podman cp $< xq:/home/
+	podman exec xq xqerl eval '
+	case xqerl:compile("/home/$(notdir $<)") of
+		Err when is_tuple(Err), element(1, Err) == xqError -> 
+			["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
+		Info when is_atom(Info) -> 
+			["$(<):1:I: compiled ok! "];
+			_ -> 
+			io:format(["$<:1:E: unknown error"])
+	end.' | jq -r '.[]' | tee $@
 	grep -q :I: $@
 	fi
 
 _build/data/%.xq.txt: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $<) ]##'
 	if podman ps -a | grep -q $(XQ)
 	then
-	bin/compile $< | tee $@
-	echo
-	grep -q :I: $@
+	echo '##[ $< ]##'
+	podman cp $< xq:/home/
+		podman exec xq xqerl eval '
+		case xqerl:compile("/home/$(notdir $<)") of
+			Err when is_tuple(Err), element(1, Err) == xqError -> 
+				["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
+			Info when is_atom(Info) -> 
+				["$(<):1:I: compiled ok! "];
+				_ -> 
+				io:format(["$<:1:E: unknown error"])
+		end.' | jq -r '.[]' | tee $@
 	fi
 
 

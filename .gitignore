@@ -5,5 +5,5 @@ _*
 src/proxy/conf/certificates.conf
 src/proxy/certificates.txt
 # src artefacts 'example.com'
-/src/code/restXQ/example.com.xqm
+/src/code/restXQ
 /src/data/example.com
