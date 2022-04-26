@@ -4,9 +4,9 @@
 
 [![asciicast](https://asciinema.org/a/487137.svg)](https://asciinema.org/a/487137)
 
-Xqerl pronounced 'squirrel',  is a xQuery 3.1 application server.
+Xqerl pronounced 'squirrel',  is a XQuery 3.1 application server.
 
-xQuery 3.1 is the query language for building data driven web applications.
+XQuery 3.1 is the query language for building data driven web applications.
 
 Xqerl is an erlang application that runs on top of the Erlang virtual machine [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine))
 Erlang applications have a reputation for being long running, fault tolerant and reliable.
@@ -48,7 +48,7 @@ and will be making some asciicast.
 
 ## Aims 
 
-We will be setting up a **local** dockerized xQuery web application development environment.
+We will be setting up a **local** dockerized XQuery web application development environment.
 
 The  web application will run in a podman pod and consist of 2 named containers
  1. 'or' container: a nginx reverse proxy server based on openresty
@@ -56,7 +56,7 @@ The  web application will run in a podman pod and consist of 2 named containers
 
 <!--
 The goal is **remote** deployment to a single Google Compute Engine instance.
-This dockerized xQuery web application deployment will serve secure HTTPS web pages from your IP domain names
+This dockerized XQuery web application deployment will serve secure HTTPS web pages from your IP domain names
  By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), the setup is capable of serving multiple domains. --> 
 
 ## Prerequisites
@@ -127,8 +127,8 @@ make init
 this generates
  1. data files 
   - 'src/data/markup.nz/index.md': a markdown document
-  - 'src/data/markup.nz/default_layout.xq': a xQuery main module
- 2. a code file:  'src/code/restXQ/markup.nz.xqm', xQuery library module which will set the restXQ endpoints for the domain.
+  - 'src/data/markup.nz/default_layout.xq': a XQuery main module
+ 2. a code file:  'src/code/restXQ/markup.nz.xqm', XQuery library module which will set the restXQ endpoints for the domain.
 
 When we run `make` which is our *build* target,
  1. the *code* file will be compiled and set the restXQ endpoints
@@ -187,7 +187,7 @@ Our running containers have volume mounts:
 
 **xq**: has these volume mounts
  - xqerl-database volume: holds 'XDM data items' and 'link items' in the xqerl database
- - xqerl-code volume: holds user main and library xQuery modules which are compiled into beam files
+ - xqerl-code volume: holds user main and library XQuery modules which are compiled into beam files
  - static-assets volume: holds binary and unparsed text files in the container filesystem. 
 
  **or**: has these volume mounts
@@ -224,7 +224,7 @@ This is a bind mount to our source files in this repos src dir.
 # --mount type=bind,destination=/usr/local/xqerl/src,source=./src,relabel=shared
 ```
 
-Note: This is only for local development of our xQuery application. 
+Note: This is only for local development of our XQuery application. 
 This bind volume will **not** be used when we deploy to a remote server.
 
 A tree view of the src folder reflects what gets stored into the respective docker volumes.
@@ -278,13 +278,13 @@ These XDM database items include document-nodes, maps, arrays, and even function
  - JSON object when parsed stored as an `instance of map(*)`
  - JSON array when parsed stored as an `instance of array(*)`
  - CSV text when parsed stored as an `instance of array(*)`
- - xQuery main module function:  when compiled stored as an `instance of function(*)`
+ - XQuery main module function:  when compiled stored as an `instance of function(*)`
 
-The URI of XDM items stored in the db can be retrieved by the the xQuery function`fn:uri-collection()`
+The URI of XDM items stored in the db can be retrieved by the the XQuery function`fn:uri-collection()`
 
-When items are stored as XDM items into the xqerl database the query power of xQuery 3.1 is amplified. 
-xQuery was originally designed to work with structured data in the context of a XML database. With xQuery 3.1 the xPath 
-xQuery data model is extended to include maps and arrays, so it is important that these items can be queried from the database.
+When items are stored as XDM items into the xqerl database the query power of XQuery 3.1 is amplified. 
+XQuery was originally designed to work with structured data in the context of a XML database. With XQuery 3.1 the xPath 
+XQuery data model is extended to include maps and arrays, so it is important that these items can be queried from the database.
 
 Prior to storing, the data can be linted, checked and preprocessed.
 Some examples:
@@ -292,7 +292,7 @@ Some examples:
  - **XML text**: well formed check (xmllint) then store as document-node item
  - **JSON** well formed check (jq) then store as map or array item
  - **markdown** text: preprocess with cmark then store as document-node
- - **xQuery main module function** compile check then store as function
+ - **XQuery main module function** compile check then store as function
 
  Our example data sources
 
@@ -322,7 +322,7 @@ the 'no extension' convention.
 Once the data is in the database you can see what 
 data is stored under our development domain.
 
-The xQuery expression to get a list of URI in the database is
+The XQuery expression to get a list of URI in the database is
 
 ```
 'http://example.com' => uri-collection() => string-join('&#10;')
