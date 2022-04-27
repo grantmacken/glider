@@ -8,18 +8,6 @@ MAKEFLAGS += --silent
 .DEFAULT_GOAL := build
 
 include .env
-# GIT_USER="$(shell git config --get user.name )"
-# GIT_REMOTE_ORIGIN_URl="$(shell git config --get remote.origin.url )"
-# GIT_REPO_FULL_NAME="$(shell echo $(GIT_REMOTE_ORIGIN_URl) | sed -e 's/git@github.com://g' | sed -e 's/\.git//g' )"
-# GIT_REPO_NAME="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f2 )"
-# GIT_REPO_OWNER_LOGIN="$(shell echo $(GIT_REPO_FULL_NAME) |cut -d/ -f1 )"
-
-# URI := http://$(DEV_DOMAIN):$(DEV_PORT)
-# URI_GREET := $(URI)/xqerl
-# URI_REST := $(URI)/db/
-# URI_ASSETS := $(URI)/assets/
-
-
 # images
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
 OR        := ghcr.io/grantmacken/podx-openresty:$(PROXY_VER)
@@ -39,7 +27,6 @@ MountProxyConf   := type=volume,target=/opt/proxy/conf,source=proxy-conf
 MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
 DASH = printf %60s | tr ' ' '-' && echo
 
-
 ROUTE ?= /index
 DOMAIN ?= $(DEV_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
@@ -50,8 +37,6 @@ CRL := podman run --pod $(POD) --rm  $(CURL)
 
 
 ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
-
-
 
 .help: help
 help: 

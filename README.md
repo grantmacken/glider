@@ -28,15 +28,6 @@ make
 w3m -dump http://example.com
 ```
 
-<!--
-To create a site based on domain you own.
-As an example lets use the 'markup.nz' domain 
-
-1 .env file: change 'DEV_DOMAIN=example.com' to 'DEV_DOMAIN=markup.nz'
-2 make hosts
-3 make domain
--->
-
 TODO
 ## WIP note
 
@@ -46,18 +37,41 @@ I try to take 'show not tell' approach,
 so working code will be run on 'github actions'
 and will be making some asciicast.
 
-## Aims 
+## Project Aims 
 
 We will be setting up a **local** dockerized XQuery web application development environment.
 
-The  web application will run in a podman pod and consist of 2 named containers
+The XQuery web applications will run in a podman pod and consist of 2 named containers
  1. 'or' container: a nginx reverse proxy server based on openresty
  2. 'xq' container: the xqerl application
 
-<!--
-The goal is **remote** deployment to a single Google Compute Engine instance.
-This dockerized XQuery web application deployment will serve secure HTTPS web pages from your IP domain names
- By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), the setup is capable of serving multiple domains. --> 
+ build targets which build from sources then deploy into docker volumes.
+
+A tree view of the src folder reflects what gets stored into the respective docker volumes.
+
+```
+src
+├── assets => docker static-assets volume
+├── code   => docker xqerl-code volume
+├── data   => docker xqerl-code volume
+└── proxy
+    └── conf => docker proxy-conf volume
+```
+
+The source files are not directly copied into thier respective volumes.
+They are *build sources* which are *piped* through a build proccess,
+then stored into a volume. To trigger the build process we just run 
+the default make target `make`.
+
+
+### End Goal: Remote Cloud Deployment.
+
+The remote deployment **example** will be how to deploy to single Google Compute Engine instance.
+
+By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
+our pod will be capable capable of serving multiple domains from a single cloud instance.
+
+ The aim is to serve secure HTTPS web pages from your IP domain names.
 
 ## Prerequisites
 
@@ -71,8 +85,7 @@ cited from [Why Use Make](https://bost.ocks.org/mike/make/)
 - jq: pipe to format JSON output `jq '.'`
 - xmlint: pipe to format XML output `xmllint --format`
 - w3m: to screen dump http requests `w3m -dump http://localhost`
-
-**the GitHub CLI**: [gh](https://github.com/cli/cli). 
+- [gh](https://github.com/cli/cli). the GitHub CLI
 
 **[podman](https://podman.io/podman)**: I am using the latest release v4. 
 To install see [podman install instructions](https://podman.io/getting-started/installation) 
@@ -117,14 +130,11 @@ You don't have to do this, but it makes life a bit easier
 
 ### Switching Domains
 
-To switch develpment to a domain you control, change the DEV_DOMAIN to your domain then run
+To switch development to a domain you control, change the DEV_DOMAIN to your domain then run
  the `make init` target.The target will create some some boilerplate src files for your domain.
 Below we will use 'markup.nz' as an example domain.
 
-```
-make init
-```
-this generates
+`make init` his generates
  1. data files 
   - 'src/data/markup.nz/index.md': a markdown document
   - 'src/data/markup.nz/default_layout.xq': a XQuery main module
@@ -133,7 +143,6 @@ this generates
 When we run `make` which is our *build* target,
  1. the *code* file will be compiled and set the restXQ endpoints
  2. the *data* files will be stored as XDM items in the xqerl database.
-
 
 ## Running xqerl as a service
 
@@ -203,10 +212,10 @@ state across host reboots or stoping and and restarting the xqerl application ru
 
 ## On Pods, Ports and Belonging to a Network 
 
-Our xqerl(xq) and nginx(or) containers are in a pod(podx).
+Our xqerl container named **xq** and nginx container named *or* are in a pod named 'podx'.
 When we created our pod, we 
    - published ports: `8080:80` for HTTP requests and '8433:80' for HTTPS requests
-   - set up network(podman) that the running containers will join.
+   - set up network named **podman** that the running containers will join. Note: the podman network is the default netwok
 
 xqerl which listens on port 8081, is running in the internal 'podman' network
 so `http://example.com:8081` is not reachable outside the pod because port 8081
@@ -215,44 +224,13 @@ is not an exposed published port for the pod.
 Outside of the pod, to reach xqerl all requests are via ngnix set up as a 
 [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
 
-## Build Sources Piped Through a Build proccess
 
-When developing on our local host there is a another docker Volume mount we can have.
-This is a bind mount to our source files in this repos src dir. 
-
-```
-# --mount type=bind,destination=/usr/local/xqerl/src,source=./src,relabel=shared
-```
-
-Note: This is only for local development of our XQuery application. 
-This bind volume will **not** be used when we deploy to a remote server.
-
-A tree view of the src folder reflects what gets stored into the respective docker volumes.
-
-```
-src
-├── assets => static-assets volume
-├── code   => xqerl-code volume
-├── data   => xqerl-code volume
-└── proxy
-    └── conf => proxy-conf volume
-```
-
-NOTE: source files are not directly copied into thier volumes.
-They are *build sources* which are *piped* through a build proccess,
-then stored into a volume. To trigger the build process we just run 
-the default make target `make`. 
-Running `make` will build or website from sources in the 'scr' directory
-
-##The Build Cycle: Edit => Build => Check
+##The Build Cycle
 
 The build cycle:
  1. edit the source files
- 2. run `make`
- 3. check the result
-
-The result of running `make` will be a local web site served at
-http://example.com:8080.
+ 2. run `make` => build result stored into docker volume
+ 3. check the site should be serving at your development domain e.g. http://example.com:8080.
 
 After the first run you can set a watch target.
 In another terminal window, cd into this repo directory 
@@ -272,7 +250,8 @@ These XDM database items include document-nodes, maps, arrays, and even function
  - If the data source is not marked up then this data can be stored as unparsed text. 
  - If the data source is binary then a link item pointing to the file location can be stored in the database.
 
- It is worth reiterating that, structured markup data sources are parsed and loaded into the xqerl database as XDM items.
+ It is worth reiterating that, structured markup data sources are parsed and loaded into 
+ the xqerl database as [XDM](https://www.w3.org/TR/xpath-datamodel-31) items.
 
  - a XML text when parsed is stored as an `instance of document-node()`
  - JSON object when parsed stored as an `instance of map(*)`
@@ -280,7 +259,7 @@ These XDM database items include document-nodes, maps, arrays, and even function
  - CSV text when parsed stored as an `instance of array(*)`
  - XQuery main module function:  when compiled stored as an `instance of function(*)`
 
-The URI of XDM items stored in the db can be retrieved by the the XQuery function`fn:uri-collection()`
+The URI of XDM items stored in the db can be retrieved by the XQuery function`fn:uri-collection()`
 
 When items are stored as XDM items into the xqerl database the query power of XQuery 3.1 is amplified. 
 XQuery was originally designed to work with structured data in the context of a XML database. With XQuery 3.1 the xPath 
@@ -301,7 +280,7 @@ src
   ├── data
   │   └── example.com
   │       ├── default_tpl.xq => into db - stored as XDM function item
-/  │       └── index.md       => into db - stored as XDM document-node
+  │       └── index.md       => into db - stored as XDM document-node
 ```
 
 When the source file becomes a XDM item stored in the the database,
@@ -311,7 +290,7 @@ When the source file becomes a XDM item stored in the the database,
 src
   ├── data
   │   └── example.com
-  │       ├── default_tpl.xq => db identifier: http://example.com/default_tpl
+  │       ├── default_layout.xq => db identifier: http://example.com/default_layout
   │       └── index.md       => db identifier: http://example.com/index
 ```
 
@@ -330,7 +309,7 @@ The XQuery expression to get a list of URI in the database is
 This expression needs to run in the context of the runner docker instance
  using 'podman exec xq xqerl eval' ...
 
- The make alias shortcut to lists database uri items for our domain is
+ The make alias shortcut to list database uri items for our domain is
 
 ```
 make data-domain-list
