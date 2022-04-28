@@ -25,7 +25,7 @@ Initial source files use 'example.com' domain.
 make up
 make hosts
 make
-w3m -dump http://example.com
+w3m -dump http://example.com:8080/
 ```
 
 TODO
@@ -45,7 +45,10 @@ The XQuery web applications will run in a podman pod and consist of 2 named cont
  1. 'or' container: a nginx reverse proxy server based on openresty
  2. 'xq' container: the xqerl application
 
- build targets which build from sources then deploy into docker volumes.
+The local development build cycle:
+ 1. **editing** source files located in the src directory
+ 2. **building** by running `make` which stores build-target results into appropiate docker volumes
+ 3. **checking** the build which is site reachable at your development domain e.g. http://example.com:8080.
 
 A tree view of the src folder reflects what gets stored into the respective docker volumes.
 
@@ -53,7 +56,7 @@ A tree view of the src folder reflects what gets stored into the respective dock
 src
 ├── assets => docker static-assets volume
 ├── code   => docker xqerl-code volume
-├── data   => docker xqerl-code volume
+├── data   => docker xqerl-database volume
 └── proxy
     └── conf => docker proxy-conf volume
 ```
@@ -63,15 +66,14 @@ They are *build sources* which are *piped* through a build proccess,
 then stored into a volume. To trigger the build process we just run 
 the default make target `make`.
 
+The **build artifacts** are the docker volumes exported as tar files.
 
-### End Goal: Remote Cloud Deployment.
+The remote deployment target, imports these tar artefacts into volumes on the remote host. 
+The end goal is to have a running podman pod serving XQuery enabled, secure HTTPS web pages from your IP domain names.
 
-The remote deployment **example** will be how to deploy to single Google Compute Engine instance.
-
+The remote deployment **example** provided will show how to deploy to single Google Compute Engine instance.
 By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
 our pod will be capable capable of serving multiple domains from a single cloud instance.
-
- The aim is to serve secure HTTPS web pages from your IP domain names.
 
 ## Prerequisites
 
@@ -225,19 +227,26 @@ Outside of the pod, to reach xqerl all requests are via ngnix set up as a
 [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
 
 
-##The Build Cycle
+##Make Targets
 
-The build cycle:
- 1. edit the source files
- 2. run `make` => build result stored into docker volume
- 3. check the site should be serving at your development domain e.g. http://example.com:8080.
+When the pod is running, you can start editing the source files in the src dir.
+After editing a source file you can build by running `make`
+The default Make target is `make build` so `make` will run `make build`
 
-After the first run you can set a watch target.
+When you invoke a subsequent `make`, only edited files will be built.
+
+After the first `make` run you can set a watch target.
 In another terminal window, cd into this repo directory 
 and run `make watch`
 
 This will watch for file writes in the src dir and  
 run the `make build` target when file writes occur.
+
+##A Site Domain Is Being Served
+
+When the pod is running, it will be serving your in development XQuery web-app.
+When developing, if a build succeeds then you get *live web view*, of your current build.
+You do not have to stop and start your pod, to see the changes you have made.
 
 TODO: livereload 
 
