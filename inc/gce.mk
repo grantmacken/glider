@@ -51,7 +51,6 @@ DOMAINS=gmack.nz,markup.nz
 
 Gssh := gcloud compute ssh $(GCE_NAME) --zone=$(GCE_ZONE) --project $(GCE_PROJECT_ID)
 Gcmd := $(Gssh) --command
-# IP != gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
 
 PHONY: gce-ssh
 gce-ssh:
@@ -93,24 +92,15 @@ gce-instance-delete:
 .PHONY: gce-images ## gce pull docker images
 gce-images:
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman pull $(XQ)'
-	$(Gcmd) 'sudo podman pull $(OR)'
-	$(Gcmd) 'sudo podman pull $(W3M)'
-	$(Gcmd) 'sudo podman pull docker.io/certbot/dns-google'
-	$(DASH)
+	$(Gcmd) 'sudo podman image ls' > _deploy/image.list
+	grep -oP 'xqerl(.+)$(XQERL_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(XQ)'
+	grep -oP 'podx-openresty(.+)$(PROXY_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(OR)'
+	grep -oP 'docker.io/certbot/dns-google' _deploy/image.list || $(Gcmd) 'sudo podman pull docker.io/certbot/dns-google'
+	grep -oP 'podx-w3m(.+)$(W3M_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(W3M)'
 	$(Gcmd) 'sudo podman image ls'
 	$(DASH)
 
-.PHONY: gce-up
-gce-up:
-	echo "##[ $(@) ]##" 
-
-.PHONY: gce-down
-gce-down:
-	echo "##[ $(@) ]##" 
-	$(Gcmd) 'sudo podman pod stop -a || true'
-	$(Gcmd) 'sudo podman stop -a || true'
-	$(Gcmd) 'sudo podman ps -a --pod'
+# GCE VOLUMES
 
 .PHONY: gce-volumes ## gce create docker volumes
 gce-volumes:
@@ -131,6 +121,39 @@ gce-volumes-clean:
 		sudo podman volume exists static-assets && sudo podman volume remove static-assets; \
 		sudo podman volume exists proxy-conf && sudo podman volume remove proxy-conf; \
 		sudo podman volume ls '
+
+
+# after we have created volumes we can import from our local dev envronment
+# 1. static-assets volume
+# 2. proxy-config volumes
+# 3. xqerl-database
+# 3. xqerl-code
+
+.PHONY: gce-volumes-import
+gce-volumes-import: $(patsubst %.tar,%.txt,$(wildcard _deploy/*.tar))
+
+_deploy/%.txt: _deploy/%.tar
+	@echo '## $(basename $(notdir $<)) ##'
+	gcloud compute scp $(<) $(GCE_NAME):/home/core/$(notdir $<)
+	$(Gcmd) 'sudo podman volume import $(basename $(notdir $<)) /home/core/$(notdir $<)'
+
+# after we have created volumes
+# and after we have set up dns ... and obtained a gcpkey
+# we can
+# use docker.io/certbot/dns-google image to
+# get certificates into our letsencrypt volume
+
+
+.PHONY: gce-up
+gce-up:
+	echo "##[ $(@) ]##" 
+
+.PHONY: gce-down
+gce-down:
+	echo "##[ $(@) ]##" 
+	$(Gcmd) 'sudo podman pod stop -a || true'
+	$(Gcmd) 'sudo podman stop -a || true'
+	$(Gcmd) 'sudo podman ps -a --pod'
 
 
 .PHONY: gce-podx
