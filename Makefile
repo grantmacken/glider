@@ -30,9 +30,6 @@ DASH = printf %60s | tr ' ' '-' && echo
 ROUTE ?= /index
 DOMAIN ?= $(DEV_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
-	
-CONNECT_TO_OR := --connect-to xq:80:xq:$(DEV_PORT)
-CONNECT_TO_XQ := --connect-to xq:80:xq:$(DEV_PORT)
 CRL := podman run --pod $(POD) --rm  $(CURL)
 
 
@@ -65,10 +62,10 @@ dump:
 curl: 
 	$(DASH)
 	curl --silent --show-error  \
-		--resolve $(DEV_DOMAIN):$(DEV_PORT):127.0.0.1 \
+		--resolve $(DEV_DOMAIN):$(POD_PORT):127.0.0.1 \
 		--connect-timeout 1 \
 		--max-time 2 \
-		http://$(DEV_DOMAIN):$(DEV_PORT)$(ROUTE)
+		http://$(DEV_DOMAIN):$(POD_PORT)$(ROUTE)
 	echo && $(DASH)
 
 .PHONY: up

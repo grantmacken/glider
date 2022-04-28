@@ -1,18 +1,18 @@
-GCE_PROJECT_ID=glider-1
-GCE_REGION=australia-southeast2
-GCE_ZONE=australia-southeast2-c
-GCE_INSTANCE_NAME=instance-3
-GCE_MACHINE_TYPE=e2-small
-GCE_IMAGE_FAMILY=fedora-coreos-next
-GCE_NAME=core@$(GCE_INSTANCE_NAME)
-GCE_DNS_ZONE=glider-zone
-GCE_SERVICE_ACCOUNT_NAME=certbot
-GCE_SERVICE_ACCOUNT="$(GCE_SERVICE_ACCOUNT_NAME)@$(GCE_PROJECT_ID).iam.gserviceaccount.com"
+GCE_PROJECT_ID ?= glider-1
+GCE_REGION ?= australia-southeast2
+GCE_ZONE ?= australia-southeast2-c
+GCE_INSTANCE_NAME ?= instance-3
+GCE_MACHINE_TYPE ?= e2-small
+GCE_IMAGE_FAMILY ?= fedora-coreos-next
+GCE_NAME ?= core@$(GCE_INSTANCE_NAME)
+GCE_DNS_ZONE? = glider-zone
+GCE_SERVICE_ACCOUNT_NAME ?= certbot
+GCE_SERVICE_ACCOUNT ?= $(GCE_SERVICE_ACCOUNT_NAME)@$(GCE_PROJECT_ID).iam.gserviceaccount.com
 
 # gce_ip := $(shell gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 
-TLS_COMMON_NAME=gmack.nz
-DOMAINS=gmack.nz,markup.nz
+# comma separated list
+DOMAINS ?= $(DEV_DOMAIN)
 
 ######################
 # https://cloud.google.com/dns/docs/migrating
@@ -137,120 +137,98 @@ _deploy/%.txt: _deploy/%.tar
 	gcloud compute scp $(<) $(GCE_NAME):/home/core/$(notdir $<)
 	$(Gcmd) 'sudo podman volume import $(basename $(notdir $<)) /home/core/$(notdir $<)'
 
+# GCE CERTS
+
 # after we have created volumes
 # and after we have set up dns ... and obtained a gcpkey
 # we can
 # use docker.io/certbot/dns-google image to
-# get certificates into our letsencrypt volume
+# get certificates into our remote letsencrypt volume
+# then import remote letsencrypt volume into local letsencrypt volume
+# then run 'certbot certificates' and put output into local _deploy/certificates.txt 
+.PHONY: gce-get-certs
+gce-get-certs: _deploy/certificates.txt
 
+_deploy/certificates.txt: .secrets/gcpkey.json
+	cat .secrets/gcpkey.json | 
+	$(Gcmd) 'cat - | tee | \
+		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
+		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
+		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
+		certbot certonly \
+		--non-interactive \
+		--dns-google \
+		--dns-google-credentials /home/gcpkey.json \
+		--email $(shell git config user.email) \
+		--agree-tos \
+	  --expand \
+		--domains $(DOMAINS) \
+	  "'
+	# once we have obtained certs we can import certs into local letsencrypt volume
+	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
+	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
+	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
+	tee $<
 
-.PHONY: gce-up
-gce-up:
-	echo "##[ $(@) ]##" 
+.PHONY: gce-certs-dry-run
+gce-certs-dry-run:
+	#$(Gcmd) 'ls -l gcpkey.json'
+	$(Gcmd) 'cat .secrets/gcpkey.json | tee | \
+		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
+		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
+		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
+		certbot certonly \
+		--dry-run \
+		--dns-google \
+		--email $(shell git config user.email) \
+		--dns-google-credentials /home/gcpkey.json \
+	  --expand \
+		--agree-tos \
+		--domains $(DOMAINS) \
+		&& ls -alR /etc/letsencrypt \
+	  "'
 
-.PHONY: gce-down
-gce-down:
-	echo "##[ $(@) ]##" 
-	$(Gcmd) 'sudo podman pod stop -a || true'
-	$(Gcmd) 'sudo podman stop -a || true'
-	$(Gcmd) 'sudo podman ps -a --pod'
-
-
-.PHONY: gce-podx
-gce-podx: # --publish 80:80 --publish 443:443
+# after we have our certs in the local letsencypt volume 
+# then _deploy/certificates.txt will contain paths to the certs
+# so we write these to src/proxy/conf/certificates.conf
+# and adjust src/proxy/conf/proxy.conf so we only serve TLS
+ 
+.PHONY: certs-proxy-mod 
+certs-proxy-mod: src/proxy/conf/proxy.conf
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman pod exists $(POD) || sudo podman pod create --name $(POD) -p 80:80 -p 443:443 --network podman'
+	$(MAKE) confs
 	$(DASH)
-	$(Gcmd) 'sudo podman pod list'
+	echo 'NOTE! pod will now only serve HTTPS and HTTP will be redirected to HTTPS'
 	$(DASH)
-
-.PHONY: gce-xq-up
-gce-xq-up:
-	$(Gcmd) 'sudo podman run --rm --name xq --pod $(POD) \
-		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
-		--tz=$(TIMEZONE) \
-		--detach $(XQ)'
-
-.PHONY: gce-or-up
-gce-or-up:
-	$(Gcmd) 'sudo podman run --rm --name or --pod $(POD) \
-		--mount $(MountLetsencrypt) \
-		--mount $(MountProxyConf) \
-		--tz=$(TIMEZONE) \
-		--detach $(OR)'
-	$(Gcmd) 'sudo podman ps -a --pod | grep -oP "$(XQ)(.+)$$"'
-
-.PHONY: gce-or-basic-up
-gce-or-basic-up:
-	$(Gcmd) 'sudo podman run --rm --name or --pod $(POD) \
-		--mount $(MountProxyConf) \
-		--tz=$(TIMEZONE) \
-		--detach $(OR)'
-
-.PHONY: gce-check
-gce-check: 
-	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman ps -a --pod '
-
-.PHONY: gce-check-flying
-gce-check-flying: 
-	echo "##[ $(@) ]##"
+	echo 'INFO! import local volumes into remote volumes'
 	$(DASH)
-	echo ' - outside the pod only port 80 and port 443 is exposed'
-	echo ' - so a request on xqerls port 8081 will fail'
-	$(DASH)
-	$(Gcmd) 'sudo podman run --rm $(W3M) -dump http://localhost:8081/xqerl'
-	echo && $(DASH)
-	echo ' - however by joining pod we can reach xqerl on port 8081'
-	$(DASH)
-	$(Gcmd) 'sudo podman run --rm --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl'
-	echo && $(DASH)
-	echo ' - the "or" container can reverse proxy requests to the "xq" container '
-	echo ' - so a request will serve content delivered by xqerl '
-	IP=$$( gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].accessConfigs[0].natIP)' )
-	echo "- gce instance comes with an external external IP address: $$IP
-	echo ' - with the IP address we can make world wide web requests '
-	podman run --rm $(W3M) -dump http://$${IP}
-	$(DASH)
-	echo ' - once we have our domain resolved by dns nameservers then ... '
-	echo ' - can dump the IP address and use out domain name'
-	podman run --rm $(W3M) -dump http://gmack.nz
-	echo && $(DASH)
+	$(MAKE) gce-volumes-import
 
-.PHONY: gce-check-site-resolve
-gce-check-site-resolve: 
-	echo "##[ $(@) ]##"
+src/proxy/conf/certificates.conf: _deploy/certificates.txt
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@echo '## $(notdir $@) ##'
+	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
+	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
+	cat $@
+
+# after we have our certs in the local letsencypt volume 
+# then we can start using TLS in our proxy server
+
+src/proxy/conf/proxy.conf: src/proxy/conf/certificates.conf
+	sed -i 's/ include basic.conf;/#include basic.conf;/' $@
+	sed -i 's/#include tls_server.conf;/include tls_server.conf;/' $@
+	sed -i 's/#include redirect.conf;/include redirect.conf;/' $@
 	$(DASH)
-	$(Gcmd) "curl -v --resolve example.com:80:$(gce_ip) http://example.com"
-	gcloud compute scp src/proxy/certs/example.com.pem $(GCE_NAME):/home/core/example.com.pem
+	cat $<
 	$(DASH)
-	$(Gcmd) "curl -v --resolve example.com:443:$(gce_ip) --cacert ~/example.com.pem https://example.com"
-	echo && $(DASH)
-
-.PHONY: gce-info
-gce-info: 
-	echo "##[ $(@) ]##"
-	#$(Gcmd) 'sudo podman ps -a'
-	curl -v http://34.87.221.233
-
-gce-import-proxy-conf: 
-	@echo '## $(@) ##'
-	gcloud compute scp _deploy/proxy-conf.tar $(GCE_NAME):/home/core/proxy-conf.tar
-	$(Gcmd) 'sudo podman volume import proxy-conf /home/core/proxy-conf.tar'
-	$(Gcmd) 'sudo podman run --rm --mount $(MountProxyConf) \
-		--entrypoint "[\"sh\",\"-c\"]" $(OR) "cat /opt/proxy/conf/reverse_proxy.conf"'
-
-gce-import-certs: 
-	@echo '## $(@) ##'
-	gcloud compute scp _deploy/certs.tar $(GCE_NAME):/home/core/certs.tar
-	$(Gcmd) 'sudo podman volume import certs /home/core/certs.tar'
-	$(Gcmd) 'sudo podman run --rm --mount $(MountCerts) \
-		--entrypoint "[\"sh\",\"-c\"]" $(OR) "ls -l /opt/proxy/certs"'
-
+	echo 'CHECK! "include basic.conf" is commented out' 
+	echo 'CHECK! "include redirect.conf" is NOT commented out' 
+	echo 'CHECK! "include tls_server.con" is NOT commented out' 
+	$(DASH)
 
 ##############################
-## CERTBOT section
-## prefix cb
+## GCE DNS section
+## prefix dns
 ##############################
 
 .PHONY: gce-dns-info
@@ -284,74 +262,60 @@ gce-service-acc:
 	fi
 	gcloud compute scp .secrets/gcpkey.json $(GCE_NAME):/home/core/.secrets/gcpkey.json
 
-# https://russt.me/2018/04/wildcard-lets-encrypt-certificates-with-certbot/
-#
-PHONY: certs-import
-certs-import: 
-	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
 
-PHONY: certs-proxy-mod # after certs import
-certs-proxy-mod: src/proxy/conf/proxy.conf
-	sed -i 's/ include basic.conf;/#include basic.conf;/' $<
-	sed -i 's/# include tls_server.conf;/include tls_server.conf;/' $<
-	sed -i 's/# include redirect.conf;/include redirect.conf;/' $<
-	$(make)
-	
+##############################
+## GCE UP
+##############################
 
-PHONY: certs-inspect
-certs-inspect: 
-	podman exec or ls -R /etc/letsencrypt
+.PHONY: gce-up
+gce-up: gce-or-up
+	echo "##[ $(@) ]##"
+	$(Gcmd) 'sudo podman ps -a --pod' | tee _deploy/up.txt
 
+.PHONY: gce-down
+gce-down:
+	echo "##[ $(@) ]##"
+	$(Gcmd) 'sudo podman pod rm $(POD) --force' || true
+	$(Gcmd) 'sudo podman ps --all --pod' | tee _deploy/up.txt
+	$(Gcmd) 'sudo podman volume ls'
 
-.PHONY: cb-certs
-cb-certs: src/proxy/conf/certificates.conf
+.PHONY: gce-podx
+gce-podx: # --publish 80:80 --publish 443:443
+	echo "##[ $(@) ]##"
+	$(Gcmd) 'sudo podman pod exists $(POD) || sudo podman pod create --name $(POD) -p 80:80 -p 443:443 --network podman'
+	$(DASH)
+	$(Gcmd) 'sudo podman pod list'
+	$(DASH)
 
-src/proxy/certificates.txt:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@echo '## $(notdir $@) ##'
-	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
-	tee  $@
+.PHONY: gce-xq-up
+gce-xq-up: gce-podx
+	$(Gcmd) 'sudo podman run --rm --name xq --pod $(POD) \
+		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
+		--tz=$(TIMEZONE) \
+		--detach $(XQ)'
 
-src/proxy/conf/certificates.conf: src/proxy/certificates.txt
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@echo '## $(notdir $@) ##'
-	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
-	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
-	cat $@
+.PHONY: gce-or-up
+gce-or-up: gce-xq-up
+	echo "##[ $(@) ]##" 
+	$(Gcmd) 'sudo podman run --rm --name or --pod $(POD) \
+		--mount $(MountLetsencrypt) \
+		--mount $(MountProxyConf) \
+		--tz=$(TIMEZONE) \
+		--detach $(OR)'
 
-.PHONY: cb-certonly
-cb-certonly:
-	$(Gcmd) 'cat .secrets/gcpkey.json | tee | \
-		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
-		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
-		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
-		certbot certonly \
-		--non-interactive \
-		--dns-google \
-		--dns-google-credentials /home/gcpkey.json \
-		--email $(shell git config user.email) \
-		--agree-tos \
-	  --expand \
-		--domains gmack.nz \
-		&& ls -alR /etc/letsencrypt \
-	  "'
-	# once we have obtained certs we can import locally
-	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
+# After we have the pod running 
+# 1. xqerl-database volume
+# 2. xqerl-code volume
 
-.PHONY: cb-dry-run
-cb-dry-run:
-	#$(Gcmd) 'ls -l gcpkey.json'
-	$(Gcmd) 'cat .secrets/gcpkey.json | tee | \
-		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
-		--entrypoint "[\"sh\",\"-c\"]" docker.io/certbot/dns-google \
-		"cat - > /home/gcpkey.json && chmod go-rwx /home/gcpkey.json && ls -l /home/gcpkey.json && \
-		certbot certonly \
-		--dry-run \
-		--dns-google \
-		--email $(shell git config user.email) \
-		--dns-google-credentials /home/gcpkey.json \
-	  --expand \
-		--agree-tos \
-		--domains gmack.nz \
-		&& ls -alR /etc/letsencrypt \
-	  "'
+.PHONY: gce-code-library-list
+gce-code-library-list: ## gce list availaiable library modules
+	echo "##[ $(@) ##]"
+	$(Gcmd) "sudo podman exec xq xqerl eval '[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()].'"  | 
+	tee _deploy/code-library.list
+
+.PHONY: gce-data-domain-list
+gce-data-domain-list:
+	echo '##[ $@ ]##'
+	$(Gcmd) 'curl -s https://$(DEV_DOMAIN)/db' |
+	tee _deploy/code-library.list
+

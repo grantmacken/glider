@@ -227,7 +227,7 @@ Outside of the pod, to reach xqerl all requests are via ngnix set up as a
 [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
 
 
-##Make Targets
+## Make Targets
 
 When the pod is running, you can start editing the source files in the src dir.
 After editing a source file you can build by running `make`
@@ -242,7 +242,7 @@ and run `make watch`
 This will watch for file writes in the src dir and  
 run the `make build` target when file writes occur.
 
-##A Site Domain Is Being Served
+## A Site Domain Is Being Served
 
 When the pod is running, it will be serving your in development XQuery web-app.
 When developing, if a build succeeds then you get *live web view*, of your current build.
