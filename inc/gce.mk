@@ -5,14 +5,14 @@ GCE_INSTANCE_NAME ?= instance-3
 GCE_MACHINE_TYPE ?= e2-small
 GCE_IMAGE_FAMILY ?= fedora-coreos-next
 GCE_NAME ?= core@$(GCE_INSTANCE_NAME)
-GCE_DNS_ZONE? = glider-zone
+GCE_DNS_ZONE ?= glider-zone
 GCE_SERVICE_ACCOUNT_NAME ?= certbot
 GCE_SERVICE_ACCOUNT ?= $(GCE_SERVICE_ACCOUNT_NAME)@$(GCE_PROJECT_ID).iam.gserviceaccount.com
 
 # gce_ip := $(shell gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 
 # comma separated list
-DOMAINS ?= $(DEV_DOMAIN)
+GCE_DOMAINS ?= $(DEV_DOMAIN)
 
 ######################
 # https://cloud.google.com/dns/docs/migrating
@@ -162,7 +162,7 @@ _deploy/certificates.txt: .secrets/gcpkey.json
 		--email $(shell git config user.email) \
 		--agree-tos \
 	  --expand \
-		--domains $(DOMAINS) \
+		--domains $(GCE_DOMAINS) \
 	  "'
 	# once we have obtained certs we can import certs into local letsencrypt volume
 	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -

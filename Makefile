@@ -62,10 +62,10 @@ dump:
 curl: 
 	$(DASH)
 	curl --silent --show-error  \
-		--resolve $(DEV_DOMAIN):$(POD_PORT):127.0.0.1 \
+		--resolve $(DEV_DOMAIN):$(POD_HTTP_PORT):127.0.0.1 \
 		--connect-timeout 1 \
 		--max-time 2 \
-		http://$(DEV_DOMAIN):$(POD_PORT)$(ROUTE)
+		http://$(DEV_DOMAIN):$(POD_HTTP_PORT)$(ROUTE)
 	echo && $(DASH)
 
 .PHONY: up
@@ -121,7 +121,7 @@ podx: volumes # --publish 80:80 --publish 443:443
 	echo "##[ $(@) ##]"
 	podman pod exists $(POD) || \
 		podman pod create \
-		--publish $(POD_PORT):80 \
+		--publish $(POD_HTTP_PORT):80 \
 	  --publish $(POD_TLS_PORT):443 \
 		--network podman \
 		--name $(@)
