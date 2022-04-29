@@ -3,7 +3,8 @@
 ###########################
 # files for the proxy-conf volume
 #
-ConfList   := $(filter-out src/proxy/conf/proxy.conf , $(wildcard src/proxy/conf/*.conf)) src/proxy/conf/proxy.conf
+# FilterOut := src/proxy/conf/proxy.conf src/proxy/conf/certificates.conf
+ConfList   := $(filter-out src/proxy/conf/proxy.conf, $(wildcard src/proxy/conf/*.conf)) src/proxy/conf/proxy.conf
 BuildConfs := _build/proxy/conf/mime.types $(patsubst src/%.conf,_build/%.conf,$(ConfList))
 # CheckConfs := $(patsubst src/%.conf,_checks/%.conf, $(ConfList))
 SiteConfs := $(patsubst src/%.conf,/opt/%.conf,$(ConfList))

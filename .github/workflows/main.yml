@@ -24,7 +24,7 @@ jobs:
         printf %60s | tr ' ' '-' && echo
         podman top xq
     - name: build site from sources
-      run: make
+      run: make build
     - name: check - installed xQuery library modules
       run: make code-library-list
     - name: check - XDM items in xqerl database
