@@ -187,9 +187,15 @@ gce-certs-dry-run:
 # then _deploy/certificates.txt will contain paths to the certs
 # so we write these to src/proxy/conf/certificates.conf
 # and adjust src/proxy/conf/proxy.conf so we only serve TLS
+#
+	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
+_deploy/certificates.txt:
+	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
+	tee _deploy/certificates.txt
  
-# .PHONY: certs-proxy-mod 
-# certs-proxy-mod: src/proxy/conf/proxy.conf
+proxy-after-certs: _deploy/certificates.txt
+
+
 # echo "##[ $(@) ]##"
 # $(MAKE) confs
 # $(DASH)
@@ -206,10 +212,7 @@ gce-certs-dry-run:
 # echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
 # cat $@
 
-	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
-# _deploy/certificates.txt:
-# $(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
-# tee _deploy/certificates.txt
+
 
 # after we have our certs in the local letsencypt volume 
 # then we can start using TLS in our proxy server

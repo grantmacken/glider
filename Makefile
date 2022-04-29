@@ -42,7 +42,7 @@ help:
 include inc/*
 
 .PHONY: build
-build: code data assets confs 
+build: code data assets confs
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
