@@ -193,7 +193,35 @@ _deploy/certificates.txt:
 	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
 	tee _deploy/certificates.txt
  
+.PHONY: proxy-after-certs
 proxy-after-certs: _deploy/certificates.txt
+	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > src/proxy/conf/certificates.conf
+	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> src/proxy/conf/certificates.conf
+	$(DASH)
+	cat src/proxy/conf/certificates.conf
+	$(DASH)
+	sed -i 's/ include basic.conf;/#include basic.conf;/' src/proxy/conf/proxy.conf
+	sed -i 's/#include tls_server.conf;/include tls_server.conf;/' src/proxy/conf/proxy.conf
+	sed -i 's/#include redirect.conf;/include redirect.conf;/' src/proxy/conf/proxy.conf
+	$(DASH)
+	cat src/proxy/conf/proxy.conf
+	$(DASH)
+	echo 'CHECK! "include basic.conf" is commented out'
+	echo 'CHECK! "include redirect.conf" is NOT commented out'
+	echo 'CHECK! "include tls_server.con" is NOT commented out'
+	$(DASH)
+	$(MAKE) confs
+	echo 'NOTE! pod will now only serve HTTPS and HTTP will be redirected to HTTPS'
+	$(DASH)
+	echo ' - import local volumes into remote volumes'
+	$(DASH)
+	$(MAKE) gce-volumes-import
+
+
+
+
+
+	
 
 
 # echo "##[ $(@) ]##"
@@ -218,9 +246,7 @@ proxy-after-certs: _deploy/certificates.txt
 # then we can start using TLS in our proxy server
 
 #  src/proxy/conf/proxy.conf: src/proxy/conf/certificates.conf
-# sed -i 's/ include basic.conf;/#include basic.conf;/' $@
-# sed -i 's/#include tls_server.conf;/include tls_server.conf;/' $@
-# sed -i 's/#include redirect.conf;/include redirect.conf;/' $@
+
 # $(DASH)
 # cat $<
 # $(DASH)
