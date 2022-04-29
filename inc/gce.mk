@@ -164,9 +164,8 @@ gce-get-certs:
 	  "'
 	# once we have obtained certs we can import certs into local letsencrypt volume
 	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
-	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
-	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
-	tee _deploy/certificates.txt
+
+
 
 .PHONY: gce-certs-dry-run
 gce-certs-dry-run:
@@ -208,6 +207,11 @@ src/proxy/conf/certificates.conf: _deploy/certificates.txt
 	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
 	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
 	cat $@
+
+	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
+_deploy/certificates.txt:
+	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
+	tee _deploy/certificates.txt
 
 # after we have our certs in the local letsencypt volume 
 # then we can start using TLS in our proxy server
