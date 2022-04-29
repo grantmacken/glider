@@ -138,10 +138,10 @@ _build/data/%.xq.stored: src/data/%.xq
 		_ -> false
 		end.'
 	fi
-	podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
+	# podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
 	echo -n ' - db identifier: '
 	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." | 
-	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))'
+	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))' | tee $@
 	
 
 
