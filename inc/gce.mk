@@ -147,9 +147,7 @@ _deploy/%.txt: _deploy/%.tar
 # then import remote letsencrypt volume into local letsencrypt volume
 # then run 'certbot certificates' and put output into local _deploy/certificates.txt 
 .PHONY: gce-get-certs
-gce-get-certs: _deploy/certificates.txt
-
-_deploy/certificates.txt: .secrets/gcpkey.json
+gce-get-certs:
 	cat .secrets/gcpkey.json | 
 	$(Gcmd) 'cat - | tee | \
 		sudo podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
@@ -168,7 +166,7 @@ _deploy/certificates.txt: .secrets/gcpkey.json
 	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
 	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
 	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
-	tee $<
+	tee _deploy/certificates.txt
 
 .PHONY: gce-certs-dry-run
 gce-certs-dry-run:
@@ -255,13 +253,19 @@ gce-service-acc:
 		--member serviceAccount:$(GCE_SERVICE_ACCOUNT) \
 		--role roles/dns.admin
 	fi
+	gcloud iam service-accounts list --format="value(email)" | tee .secrets/gcloud-iam-service.accounts
+
+.PHONY: gce-service-acc-keys
+gce-service-acc-keys:
+	echo "$(GCE_SERVICE_ACCOUNT)"
+	# gcloud iam service-accounts list --format="value(email)" | tee .secrets/gcloud-iam-service.accounts
 	#gcloud iam service-accounts list
 	if [ ! -f .secrets/gcpkey.json ]
 	then
 	gcloud iam service-accounts keys create .secrets/gcpkey.json --iam-account "$(GCE_SERVICE_ACCOUNT)"
 	fi
-	gcloud compute scp .secrets/gcpkey.json $(GCE_NAME):/home/core/.secrets/gcpkey.json
-
+	# gcloud compute scp .secrets/gcpkey.json $(GCE_NAME):/home/core/.secrets/gcpkey.json
+	gcloud iam service-accounts keys list --iam-account=$(GCE_SERVICE_ACCOUNT)
 
 ##############################
 ## GCE UP
