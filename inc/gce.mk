@@ -165,8 +165,6 @@ gce-get-certs:
 	# once we have obtained certs we can import certs into local letsencrypt volume
 	$(Gcmd) 'sudo podman volume export letsencrypt' |  podman volume import letsencrypt -
 
-
-
 .PHONY: gce-certs-dry-run
 gce-certs-dry-run:
 	#$(Gcmd) 'ls -l gcpkey.json'
@@ -190,43 +188,43 @@ gce-certs-dry-run:
 # so we write these to src/proxy/conf/certificates.conf
 # and adjust src/proxy/conf/proxy.conf so we only serve TLS
  
-.PHONY: certs-proxy-mod 
-certs-proxy-mod: src/proxy/conf/proxy.conf
-	echo "##[ $(@) ]##"
-	$(MAKE) confs
-	$(DASH)
-	echo 'NOTE! pod will now only serve HTTPS and HTTP will be redirected to HTTPS'
-	$(DASH)
-	echo 'INFO! import local volumes into remote volumes'
-	$(DASH)
-	$(MAKE) gce-volumes-import
+# .PHONY: certs-proxy-mod 
+# certs-proxy-mod: src/proxy/conf/proxy.conf
+# echo "##[ $(@) ]##"
+# $(MAKE) confs
+# $(DASH)
+# echo 'NOTE! pod will now only serve HTTPS and HTTP will be redirected to HTTPS'
+# $(DASH)
+# echo 'INFO! import local volumes into remote volumes'
+# $(DASH)
+# $(MAKE) gce-volumes-import
 
-src/proxy/conf/certificates.conf: _deploy/certificates.txt
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@echo '## $(notdir $@) ##'
-	echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
-	echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
-	cat $@
+# src/proxy/conf/certificates.conf: _deploy/certificates.txt
+# [ -d $(dir $@) ] || mkdir -p $(dir $@)
+# @echo '## $(notdir $@) ##'
+# echo "ssl_certificate  $(shell grep -oP 'Certificate Path: \K.+' $<);" > $@
+# echo "ssl_certificate_key  $(shell grep -oP 'Private Key Path: \K.+' $<);" >> $@
+# cat $@
 
 	# once we have obtained certs run 'certbot certificates' and put output into local _deploy/certificates.txt 
-_deploy/certificates.txt:
-	$(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
-	tee _deploy/certificates.txt
+# _deploy/certificates.txt:
+# $(Gcmd) 'sudo podman run --rm --name certbot --mount $(MountLetsencrypt) docker.io/certbot/dns-google certificates' |
+# tee _deploy/certificates.txt
 
 # after we have our certs in the local letsencypt volume 
 # then we can start using TLS in our proxy server
 
-src/proxy/conf/proxy.conf: src/proxy/conf/certificates.conf
-	sed -i 's/ include basic.conf;/#include basic.conf;/' $@
-	sed -i 's/#include tls_server.conf;/include tls_server.conf;/' $@
-	sed -i 's/#include redirect.conf;/include redirect.conf;/' $@
-	$(DASH)
-	cat $<
-	$(DASH)
-	echo 'CHECK! "include basic.conf" is commented out' 
-	echo 'CHECK! "include redirect.conf" is NOT commented out' 
-	echo 'CHECK! "include tls_server.con" is NOT commented out' 
-	$(DASH)
+#  src/proxy/conf/proxy.conf: src/proxy/conf/certificates.conf
+# sed -i 's/ include basic.conf;/#include basic.conf;/' $@
+# sed -i 's/#include tls_server.conf;/include tls_server.conf;/' $@
+# sed -i 's/#include redirect.conf;/include redirect.conf;/' $@
+# $(DASH)
+# cat $<
+# $(DASH)
+# echo 'CHECK! "include basic.conf" is commented out' 
+# echo 'CHECK! "include redirect.conf" is NOT commented out' 
+# echo 'CHECK! "include tls_server.con" is NOT commented out' 
+# $(DASH)
 
 ##############################
 ## GCE DNS section
