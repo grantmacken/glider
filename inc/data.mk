@@ -69,7 +69,7 @@ _build/data/%.xml: src/data/%.md
 	echo "xqerl database: update cmark XML from markdown source"
 	cat $< |
 	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' | xmllint --quiet - > $@
+	sed -e '1,2d' > $@
 	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
@@ -84,7 +84,7 @@ _build/data/%.xml: src/data/%.md
 	echo 'resource: $(basename $(notdir $<))'
 	cat $< |
 	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' | xmllint --quiet - > $@
+	sed -e '1,2d' > $@
 	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
