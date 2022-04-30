@@ -1,22 +1,42 @@
-###########################
-### The data directory holds files 
+##########################
+## The data directory holds files 
 ## that will be stored in the xqerl db 
 ## the stored XDM item will be detirmined by the initial file extension 
 # src/data/{domain}/{collection}/{filename}.{extension}
 ###########################
-mdList  :=  $(shell find src/data -type f  -name '*.md')
-jsonList  := $(shell find src/data -type f  -name '*.json')
-xmlList  :=  $(shell find src/data -type f  -name '*.xml')
-xqList  :=  $(shell find src/data -type f  -name '*.xq')
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+mdList  := $(call rwildcard,src/data,*.md)
+jsonList  := $(call rwildcard,src/data,*.json)
+xmlList  := $(call rwildcard,src/data,*.xml)
+xqList  :=  $(call rwildcard,src/data,*.xq)
 
-mdBuild := $(patsubst src/%.md,_build/%.md.headers,$(mdList))
-jsonBuild := $(patsubst src/%.json,_build/%.json.headers,$(jsonList))
-xmlBuild := $(patsubst src/%.xml,_build/%.xml.headers,$(xmlList))
-xqBuild := $(patsubst src/%.xq,_build/%.xq.stored,$(xqList))
+mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
+jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
+xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
+xqBuild := $(patsubst src/%,_build/%.stored,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store XDM data items in db
+data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
 
+.PHONY: data-deploy
+data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(mdBuild))
+
+.PHONY: data-volume-export
+data-volume-export:
+	podman volume export xqerl-database > _deploy/xqerl-database.tar
+
+.PHONY: data-volume-import
+data-volume-import: down
+	echo "##[ $(@) ]##"
+	podman volume import xqerl-database  _deploy/xqerl-database.tar
+
+.PHONY: data-volume-reset
+data-volume-reset: down
+	podman volume remove xqerl-database --force || true
+	podman volume create xqerl-database
+
+	#podman volume remove xqerl-database
+	
 .PHONY: data-clean
 data-clean: ## clean "data" build artefacts
 	echo '##[ $@ ]##'
@@ -37,19 +57,20 @@ data-in-pod-list:
 data-list:
 	$(call Dump,db)
 
-_build/data/%.md.headers: src/data/%.md
+_build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(basename $(notdir $<)) ]##'
+	echo '##[ $(*) ]##'
 	if podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
 		-I --header "Accept: application/xml" \
 		http://localhost:8081/db/$(*) | grep -q '200'
 	then
-	echo "xqerl database: update cmark XML from markdown"
+	echo "xqerl database: update cmark XML from markdown source"
 	cat $< |
-	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
-	sed -e '1,2d' 2>/dev/null |
+	podman run --rm --interactive $(CMARK) |
+	sed -e '1,2d' | xmllint --quiet - > $@
+	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
@@ -57,14 +78,14 @@ _build/data/%.md.headers: src/data/%.md
 		--header "Content-Type: application/xml" \
 		--data-binary @- \
 		http://localhost:8081/db/$(*) | grep -q '204'
-	touch $@ 
 	else
-	echo "xqerl database: cmark XML from markdown"
+	echo "xqerl database: new cmark XML from markdown source"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
 	cat $< |
-	podman run --rm --interactive $(CMARK) --to xml --validate-utf8 --safe --smart 2>/dev/null |
-	sed -e '1,2d' 2>/dev/null |
+	podman run --rm --interactive $(CMARK) |
+	sed -e '1,2d' | xmllint --quiet - > $@
+	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--header "Content-Type: application/xml" \
@@ -72,14 +93,51 @@ _build/data/%.md.headers: src/data/%.md
 		--data-binary @- \
 		--output /dev/null \
 		--dump-header - \
-		http://localhost:8081/db/$(dir $(*)) | tee $@
-	grep -q '201' $@
+		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
 	# sleep 1
 	# if [ -e tiny-lr.pid ]; then
 	# curl -s --ipv4  http://localhost:35729/changed?files=$*
 	# fi
 	$(DASH)
+
+_deploy/data/%.xml: _build/data/%.xml
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $* ]##'
+	if $(Gcmd) 'sudo podman run  --rm --pod $(POD) $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/xml" \
+		http://localhost:8081/db/$(*) '  | grep -q '200'
+	then 
+	echo "remote xqerl database: update cmark XML from markdown source"
+	echo ' - db item [ http://$(*) ]'
+	cat $< | $(Gcmd) 'cat - | tee | sudo podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+    -X PUT \
+		--header "Content-Type: application/xml" \
+		--data-binary @- \
+		http://localhost:8081/db/$(*)' | grep -q 204
+	$(DASH)
+	else 
+	echo ' - item not found'
+	echo "xqerl database: cmark XML from markdown"
+	echo 'collection: http://$(dir $(*))'
+	echo 'resource: $(basename $(notdir $<))'
+	cat $< | $(Gcmd) 'cat - | tee | sudo podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--header "Content-Type: application/xml" \
+		--header "Slug: $(basename $(notdir $<))" \
+		--data-binary @- \
+		--output /dev/null \
+		--dump-header - \
+		http://localhost:8081/db/$(dir $(*))' | grep -q 201
+	fi
+	$(Gcmd) 'sudo podman run --rm  --pod $(POD) $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--header "Accept: application/xml" \
+		http://localhost:8081/db/$(*)' > $@
 
 _build/data/%.xml.headers: src/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -98,7 +156,6 @@ _build/data/%.xml.headers: src/data/%.xml
 	bin/db-create $< | tee $@
 	grep -qoP 'HTTP/1.1 201 Created' $@
 	fi
-
 
 _build/data/%.xq.stored: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -138,10 +195,10 @@ _build/data/%.xq.stored: src/data/%.xq
 		_ -> false
 		end.'
 	fi
-	# podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
+	podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
 	echo -n ' - db identifier: '
 	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." | 
-	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))' | tee $@
+	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))'
 	
 
 

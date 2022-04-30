@@ -12,10 +12,10 @@ include .env
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
 OR        := ghcr.io/grantmacken/podx-openresty:$(PROXY_VER)
 CERTBOT   := docker.io/certbot/dns-google
-CMARK     := ghcr.io/grantmacken/podx-cmark:$(GHPKG_CMARK_VER)
-MAGICK    := ghcr.io/grantmacken/podx-magick:$(GHPKG_MAGICK_VER)
-ZOPFLI    := ghcr.io/grantmacken/podx-zopfli:$(GHPKG_ZOPFLI_VER)
-CSSNANO   := ghcr.io/grantmacken/podx-cssnano:$(GHPKG_CSSNANO_VER)
+CMARK     := ghcr.io/grantmacken/podx-cmark:$(CMARK_VER)
+# MAGICK    := ghcr.io/grantmacken/podx-magick:$(GHPKG_MAGICK_VER)
+# ZOPFLI    := ghcr.io/grantmacken/podx-zopfli:$(GHPKG_ZOPFLI_VER)
+# CSSNANO   := ghcr.io/grantmacken/podx-cssnano:$(GHPKG_CSSNANO_VER)
 W3M       := ghcr.io/grantmacken/podx-w3m:$(W3M_VER)
 CURL      := ghcr.io/grantmacken/podx-curl:$(CURL_VER)
 # xqerl volume mounts
@@ -31,7 +31,6 @@ ROUTE ?= /index
 DOMAIN ?= $(DEV_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 CRL := podman run --pod $(POD) --rm  $(CURL)
-
 
 ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
 
@@ -89,7 +88,7 @@ images:
 	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
 	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
 	podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
-	podman images | grep -oP 'podx-cmark(.+)$(GHPKG_CMARK_VER)' || podman pull $(CMARK)
+	podman images | grep -oP 'podx-cmark(.+)$(CMARK_VER)' || podman pull $(CMARK)
 	podman images | grep -oP 'podx-curl(.+)$(CURL_VER)' || podman pull $(CURL)
 
 .PHONY: volumes
