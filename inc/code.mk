@@ -5,7 +5,10 @@
 # The modules are in a flat directory structure: src/code/{name}.{xq or xqm}
 # xq for main modules 
 # xqm for library modules
-# add restXQ routes library to compile last
+# path 'src/code/restXQ/' is for restXQ librarys
+# restXQ routes are compiled last.
+# restXQ file basename should be a domain name with a '.xqm' extension'
+# e.g. src/code/restXQ/example.com.xqm  where 'example.com' is the basename'
 ###########################
 restXQList  := $(wildcard src/code/restXQ/*.xqm)
 libList := $(wildcard src/code/*.xqm)
@@ -14,7 +17,7 @@ mainModulesBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(wildcard src/code/*.xq
 restXQBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(restXQList)) 
 # xquery constructors that can be stored as XDM items the xqerl db
 # these can be functions, maps or arrays we build here to do a compile check
-xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(shell find src/data -type f  -name '*.xq'))
+xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(call rwildcard,src/data,*.xq))
 
 .PHONY: code
 code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) $(restXQBuild)
@@ -37,7 +40,7 @@ _build/code/%.xqm.txt: src/code/%.xqm
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if podman ps -a | grep -q $(XQ)
 	then
-	echo '##[ $(notdir $<) ]##'
+	echo '##[ $< ]##'
 	podman cp $< xq:/home/
 	podman exec xq xqerl eval '
 	case xqerl:compile("/home/$(notdir $<)") of
@@ -46,8 +49,8 @@ _build/code/%.xqm.txt: src/code/%.xqm
 		Info when is_atom(Info) -> 
 			["$<:1:I: compiled ok! "];
 			_ -> 
-			io:format(["$<:1:E: unknown error"])
-	end.' | jq -r '.[]' | tee $@
+			["$<:1:E: unknown error"]
+	end.' | tee $@
 	grep -q :I: $@
 	fi
 
@@ -64,8 +67,8 @@ _build/code/%.xq.txt: src/code/%.xq
 		Info when is_atom(Info) -> 
 			["$(<):1:I: compiled ok! "];
 			_ -> 
-			io:format(["$<:1:E: unknown error"])
-	end.' | jq -r '.[]' | tee $@
+			["$<:1:E: unknown compile error"]
+	end.' | tee $@
 	grep -q :I: $@
 	fi
 
