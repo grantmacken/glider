@@ -6,17 +6,19 @@
 ###########################
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 mdList  := $(call rwildcard,src/data,*.md)
-jsonList  := $(call rwildcard,src/data,*.json)
-xmlList  := $(call rwildcard,src/data,*.xml)
+# jsonList  := $(call rwildcard,src/data,*.json)
+# xmlList  := $(call rwildcard,src/data,*.xml)
 xqList  :=  $(call rwildcard,src/data,*.xq)
 
 mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
-jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
-xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
+# TODO jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
+# TODO xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%.stored,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
+data: $(mdBuild) $(xqBuild)	## from src store xdm data items in db
+
+ #TODO $(xmlBuild) $(jsonBuild)
 
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(mdBuild))
@@ -40,7 +42,7 @@ data-volume-reset: down
 .PHONY: data-clean
 data-clean: ## clean "data" build artefacts
 	echo '##[ $@ ]##'
-	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
+	rm -f $(mdBuild) $(xqBuild) _deploy/xqerl-database.tar
 
 .PHONY: data-domain-list
 data-domain-list:
@@ -139,23 +141,24 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
 
-_build/data/%.xml.headers: src/data/%.xml
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(basename $(notdir $<)) ]##'
-	$(DASH)
-	if grep -qoP 'HTTP/1.1 201 Created' $@
-	then
-	echo " update:  $(shell grep -oP 'location: \K([^\s]+)' $@)"
-	bin/db-update $< | grep -qoP '^HTTP/1.1 204 No Content'
-	touch $@
-	curl --silent --show-error --connect-timeout 1 --max-time 2 \
-    --header "Accept: application/xml" \
-		$(shell grep -oP 'location: \K([^\s]+)' $@)
-	echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
-	else
-	bin/db-create $< | tee $@
-	grep -qoP 'HTTP/1.1 201 Created' $@
-	fi
+# TODO
+# _build/data/%.xml: src/data/%.xml
+# [ -d $(dir $@) ] || mkdir -p $(dir $@)
+# echo '##[ $(basename $(notdir $<)) ]##'
+# $(DASH)
+# if grep -qoP 'HTTP/1.1 201 Created' $@
+# then
+# echo " update:  $(shell grep -oP 'location: \K([^\s]+)' $@)"
+# bin/db-update $< | grep -qoP '^HTTP/1.1 204 No Content'
+# touch $@
+# curl --silent --show-error --connect-timeout 1 --max-time 2 \
+# 	--header "Accept: application/xml" \
+# 	$(shell grep -oP 'location: \K([^\s]+)' $@)
+# echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
+# else
+# bin/db-create $< | tee $@
+# grep -qoP 'HTTP/1.1 201 Created' $@
+# fi
 
 _build/data/%.xq.stored: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
