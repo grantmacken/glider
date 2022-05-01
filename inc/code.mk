@@ -85,8 +85,9 @@ _build/data/%.xq.txt: src/data/%.xq
 			Info when is_atom(Info) -> 
 				["$(<):1:I: compiled ok! "];
 				_ -> 
-				io:format(["$<:1:E: unknown error"])
-		end.' | jq -r '.[]' | tee $@
+				["$<:1:E: unknown error"]
+		end.' | tee $@
+	grep -q :I: $@
 	fi
 
 
