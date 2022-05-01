@@ -32,7 +32,10 @@ DOMAIN ?= $(DEV_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 CRL := podman run --pod $(POD) --rm  $(CURL)
 
-ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
+# recursive wildcard function
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+
+#ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
 
 .help: help
 help: 
