@@ -4,15 +4,14 @@
 
 [![asciicast](https://asciinema.org/a/487137.svg)](https://asciinema.org/a/487137)
 
-Xqerl pronounced 'squirrel',  is a XQuery 3.1 application server.
-
-XQuery 3.1 is the query language for building data driven web applications.
+[Xqerl](https://github.com/zadean/xqerl) pronounced 'squirrel',  is a XQuery 3.1 application server and database.
+ The xqerl database provides a conveniant store for hierarchical collections of [XDM](https://www.w3.org/TR/xpath-datamodel-31/) items. 
+[XQuery 3.1](https://www.w3.org/TR/xquery-31/) is the query language used for building data driven web applications 
+from the data stored in the xqerl database.
 
 Xqerl is an erlang application that runs on top of the Erlang virtual machine [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine))
-Erlang applications have a reputation for being long running, fault tolerant and reliable.
-
-This project uses a xqerl docker image, so you
-do not need to locally install erlang or even know much about erlang.
+[Erlang](https://en.wikipedia.org/wiki/Erlang_(programming_language)) applications have a reputation for being long running, fault tolerant and reliable.
+This project uses a xqerl container image, so you do not need to locally install erlang or even know much about erlang.
 
 # glider: A template repo
 
@@ -39,9 +38,11 @@ and will be making some asciicast.
 
 ## Project Aims 
 
-We will be setting up a **local** dockerized XQuery web application development environment.
+We will be setting up a **local** containerized XQuery web application development environment.
 
-The XQuery web applications will run in a podman pod and consist of 2 named containers
+The XQuery web applications will run in a
+ [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#podman_pods__what_you_need_to_know)
+ and consist of 2 named containers.
  1. 'or' container: a nginx reverse proxy server based on openresty
  2. 'xq' container: the xqerl application
 
@@ -250,7 +251,7 @@ You do not have to stop and start your pod, to see the changes you have made.
 
 TODO: livereload 
 
-### xqerl-database volume: putting data into the xqerl database
+## xqerl-database volume: putting data into the xqerl database
 
  - Source structured markup data like XML and JSON can be parsed and stored in 
 the xqerl database as XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
@@ -324,7 +325,100 @@ This expression needs to run in the context of the runner docker instance
 make data-domain-list
 ```
 
+## xqerl-code volume: xqerl XQuery web application
 
+The 'src/code' files contain XQuery modules.
+
+```
+src
+└── code
+    ├── cm_dispatch.xqm
+    ├── db-store.xq
+    └── restXQ
+        ├── example.com.xqm
+        └── markup.nz.xqm
+```
+
+XQuery defines two types of modules
+ 1. library modules: by convention we give these a `.xqm` extension
+ 2. main modules:  by convention we give these a `.xq` extension
+
+ When we invoke `make` the xQuery *library modules* with extension `.xqm` 
+ in the src/code directory are compiled by xqerl into beam files to run on the 
+ [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)beam). If the code does
+ not compile, the beam file will NOT be created or updated. 
+ It is these compiled beam files that are stored in the container xqerl-code volume.
+
+ You can list your available compiled xQuery library modules.
+
+```
+make code-library-list
+#  the above is an alias for 
+podman exec xq xqerl eval \
+'[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()].'
+```
+
+### restXQ library modules
+
+Like [other](https://docs.basex.org/wiki/RESTXQ) XQuery application servers, the xqerl code server has a restXQ implemention.
+By convention we place our restXQ XQuery library modules in the `src/code/restXQ` directory.
+
+When we invoke `make` the restXQ modules will compile after other XQuery library modules.
+We do this because the restXQ library will often import other libraries, 
+so we need to compile these libraries first.
+
+
+
+
+
+RestXQ library modules on a basic level associates HTTP request with XQuery functions.
+In our pod these HTTP requests are filtered via nginx acting as a reverse proxy.
+Before the URI is poxy passed to the xqerl container we rewrite the location path 
+so it includes the **domain name** in the request
+
+```nginx
+location ~* ^/(index|index.html)?$ {
+  rewrite ^/?(.*)$ /$domain/index break;
+  proxy_pass http://xq;
+}
+
+location / {
+  rewrite ^/?(.*)$ /$domain/$1 break;
+  proxy_pass http://xq;
+}
+```
+
+1. `http://example.com/` will be proxy passed as `http://xq/example.com/index`
+2. `http://markup.nz/`   will be proxy passed as `http://xq/markup.nz/index`
+
+Note: the nginx rewrite is domain based, and no adjustment to the nginx conf files is need when we swap out domains. 
+
+When we develop restXQ routes for our domains each domain gets its own restXQ library module.
+
+1. `http://example.com` source module `src/code/restXQ/example.com.xqm`
+2. `http://markup.nz` source module `src/code/restXQ/markup.nz.xqm`
+
+In each domain based restXQ module the `rest:path` will start with the 'domain'
+
+```
+declare
+  %rest:path("/example.com/{$ITEM}")
+  %rest:GET
+  %rest:produces("text/html")
+  %output:method("html")
+function _:erewhon($ITEM){
+...
+```
+We can also associate a request with data contained in the xqerl database 
+as Xqerl database indentifiers are also based on a similar uri scheme-domain-path pattern.
+`http://{DOMAIN}/{COLLECTION_ITEM}'
+
+```
+nginx receives: https://example.com =>
+rewite proxy pass: http://xq/example.com/index =>
+restXQ path: /example.com/{$ITEM} =>
+XQerl function can utilize db identifier: http://example.com/index
+```
 
 
 <!--
