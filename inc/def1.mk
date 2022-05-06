@@ -1,19 +1,19 @@
 define restXQ_tpl
-module namespace _ = 'http://$(DEV_DOMAIN)/#routes';
+module namespace _ = 'http://$(DNS_DOMAIN)/#routes';
 declare namespace cm ="http://commonmark.org/xml/1.0";
 import module namespace cmark = "http://xq/#cm_dispatch";
 
 declare
-  %rest:path("/$(DEV_DOMAIN)/{$$ITEM}")
+  %rest:path("/$(DNS_DOMAIN)/{$$ITEM}")
   %rest:GET
   %rest:produces("text/html")
   %output:method("html")
 function _:erewhon($$ITEM){
   try {
-  let $$uri := 'http://$(DEV_DOMAIN)/' || $$ITEM
+  let $$uri := 'http://$(DNS_DOMAIN)/' || $$ITEM
   let $$resMap := 
       map{'uri': $$uri, 
-          'domain': '$(DEV_DOMAIN)',
+          'domain': '$(DNS_DOMAIN)',
           'collection' : _:dbCollection($$uri), 
           'item':  _:dbItem($$uri)}
   return
@@ -29,7 +29,7 @@ function _:erewhon($$ITEM){
     else _:notFound($$resMap) 
   } catch * {(
     _:svrErr(
-		map { 'uri': 'http://' || '$(DEV_DOMAIN):$($(POD_HTTP_PORT))/' || $$ITEM, 
+		map { 'uri': 'http://' || '$(DNS_DOMAIN):$($(POD_HTTP_PORT))/' || $$ITEM, 
              'problem' : 'xQuery dynamic error',
              'code' : $$err:code, 
              'description' : $$err:description

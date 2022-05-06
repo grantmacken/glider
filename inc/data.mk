@@ -4,7 +4,6 @@
 ## the stored XDM item will be detirmined by the initial file extension 
 # src/data/{domain}/{collection}/{filename}.{extension}
 ###########################
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 mdList  := $(call rwildcard,src/data,*.md)
 # jsonList  := $(call rwildcard,src/data,*.json)
 # xmlList  := $(call rwildcard,src/data,*.xml)
@@ -47,13 +46,13 @@ data-clean: ## clean "data" build artefacts
 .PHONY: data-domain-list
 data-domain-list:
 	echo '##[ $@ ]##' #&#10
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DEV_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DNS_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
 
 .PHONY: data-in-pod-list
 data-in-pod-list:
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
-		http://$(DEV_DOMAIN)/db
+		http://$(DNS_DOMAIN)/db
 
 .PHONY: data-list
 data-list:

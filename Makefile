@@ -28,7 +28,7 @@ MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
 DASH = printf %60s | tr ' ' '-' && echo
 
 ROUTE ?= /index
-DOMAIN ?= $(DEV_DOMAIN)
+DOMAIN ?= $(DNS_DOMAIN)
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 CRL := podman run --pod $(POD) --rm  $(CURL)
 
@@ -64,10 +64,10 @@ dump:
 curl: 
 	$(DASH)
 	curl --silent --show-error  \
-		--resolve $(DEV_DOMAIN):$(POD_HTTP_PORT):127.0.0.1 \
+		--resolve $(DNS_DOMAIN):$(POD_HTTP_PORT):127.0.0.1 \
 		--connect-timeout 1 \
 		--max-time 2 \
-		http://$(DEV_DOMAIN):$(POD_HTTP_PORT)$(ROUTE)
+		http://$(DNS_DOMAIN):$(POD_HTTP_PORT)$(ROUTE)
 	echo && $(DASH)
 
 .PHONY: up
@@ -77,7 +77,7 @@ up: or-up init
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	podman ps --all --pod
 	echo && $(DASH)
-	if grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts
+	if grep -q '127.0.0.1   $(DNS_DOMAIN)' /etc/hosts
 	then 
 	$(call Dump,$(DOMAIN),$(ROUTE))
 	else
@@ -144,8 +144,8 @@ clean: down init-clean
 	# rm artefacts from 'build' target
 	rm -fr _build
 	# rm artefacts from 'init' target
-	rm -v src/data/$(DEV_DOMAIN)/*  || true
-	rm -v src/code/restXQ/$(DEV_DOMAIN).xqm  || true
+	rm -v src/data/$(DNS_DOMAIN)/*  || true
+	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm  || true
 	@systemctl --user stop pod-podx.service || true
 	@systemctl --user disable container-xq.service || true
 	@systemctl --user disable container-or.service || true
@@ -257,6 +257,7 @@ service-clean:
 
 .PHONY: rootless
 rootless:
+	sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 	grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || 
 	echo 'net.ipv4.ip_unprivileged_port_start=80' | 
 	sudo tee -a /etc/sysctl.conf
@@ -264,8 +265,8 @@ rootless:
 
 .PHONY: hosts
 hosts:
-	grep -q '127.0.0.1   $(DEV_DOMAIN)' /etc/hosts || 
-	echo '127.0.0.1   $(DEV_DOMAIN)' |
+	grep -q '127.0.0.1   $(DNS_DOMAIN)' /etc/hosts || 
+	echo '127.0.0.1   $(DNS_DOMAIN)' |
 	sudo tee -a /etc/hosts
 	$(DASH)
 	cat  /etc/hosts
@@ -273,42 +274,42 @@ hosts:
 
 .PHONY: hosts-remove
 hosts-remove:
-	sudo sed -i '/127.0.0.1   $(DEV_DOMAIN)/d' /etc/hosts
+	sudo sed -i '/127.0.0.1   $(DNS_DOMAIN)/d' /etc/hosts
 	cat  /etc/hosts
 
 .PHONY: init
 init: data-init code-init
 
-data-init: src/data/$(DEV_DOMAIN)/index.md src/data/$(DEV_DOMAIN)/default_layout.xq
-code-init: src/code/restXQ/$(DEV_DOMAIN).xqm
+data-init: src/data/$(DNS_DOMAIN)/index.md src/data/$(DNS_DOMAIN)/default_layout.xq
+code-init: src/code/restXQ/$(DNS_DOMAIN).xqm
 
 .PHONY: init-clean
 init-clean:  data-init-clean code-init-clean
 
 code-init-clean: 
-	rm -v src/code/restXQ/$(DEV_DOMAIN).xqm || true
+	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm || true
 
 data-init-clean: 
 	echo '##[ $@ ]##'
-	rm -v src/data/$(DEV_DOMAIN)/index.md || true
-	rm -v src/data/$(DEV_DOMAIN)/default_layout.xq || true
+	rm -v src/data/$(DNS_DOMAIN)/index.md || true
+	rm -v src/data/$(DNS_DOMAIN)/default_layout.xq || true
 
-src/code/restXQ/$(DEV_DOMAIN).xqm: export restXQ_tpl:=$(restXQ_tpl)
-src/code/restXQ/$(DEV_DOMAIN).xqm:
+src/code/restXQ/$(DNS_DOMAIN).xqm: export restXQ_tpl:=$(restXQ_tpl)
+src/code/restXQ/$(DNS_DOMAIN).xqm:
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(notdir $@) ]##'
 	echo "$${restXQ_tpl}"  > $@
 	ls -l $@
 
-src/data/$(DEV_DOMAIN)/index.md: export index_md:=$(index_md)
-src/data/$(DEV_DOMAIN)/index.md:
+src/data/$(DNS_DOMAIN)/index.md: export index_md:=$(index_md)
+src/data/$(DNS_DOMAIN)/index.md:
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(notdir $@) ]##'
 	echo "$${index_md}"  > $@
 	ls -l $@
 
-src/data/$(DEV_DOMAIN)/default_layout.xq: export default_layout:=$(default_layout)
-src/data/$(DEV_DOMAIN)/default_layout.xq:
+src/data/$(DNS_DOMAIN)/default_layout.xq: export default_layout:=$(default_layout)
+src/data/$(DNS_DOMAIN)/default_layout.xq:
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(notdir $@) ]##'
 	echo "$${default_layout}"  > $@

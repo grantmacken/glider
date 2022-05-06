@@ -12,7 +12,7 @@ GCE_SERVICE_ACCOUNT ?= $(GCE_SERVICE_ACCOUNT_NAME)@$(GCE_PROJECT_ID).iam.gservic
 # gce_ip := $(shell gcloud compute instances describe $(GCE_INSTANCE_NAME) --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 
 # comma separated list
-GCE_DOMAINS ?= $(DEV_DOMAIN)
+GCE_DOMAINS ?= $(DNS_DOMAIN)
 
 ######################
 # https://cloud.google.com/dns/docs/migrating
@@ -351,6 +351,6 @@ gce-code-library-list: ## gce list availaiable library modules
 .PHONY: gce-data-domain-list
 gce-data-domain-list:
 	echo '##[ $@ ]##'
-	$(Gcmd) 'curl -s https://$(DEV_DOMAIN)/db' |
+	$(Gcmd) 'curl -s https://$(DNS_DOMAIN)/db' |
 	tee _deploy/code-library.list
 
