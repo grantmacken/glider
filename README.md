@@ -54,7 +54,7 @@ The XQuery web applications will run in a
 The local development build cycle:
  1. **editing** source files located in the src directory
  2. **building** by running `make` which stores build-target results into appropiate docker volumes
- 3. **checking** the build which is site reachable at your development domain e.g. http://example.com:8080.
+ 3. **checking** the build which is site reachable at your development domain e.g. http://example.com.
 
 A tree view of the src folder reflects what gets stored into the respective docker volumes.
 
@@ -122,9 +122,6 @@ To install see [podman install instructions](https://podman.io/getting-started/i
 
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
 
-
-
-
 ## Getting Started
 
 ```
@@ -152,7 +149,7 @@ we need to implement the suggested workaround. The same workaround is also used 
 you want to expose a privileged port in a 
 [rootless docker setup](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports)
 
-The target `make rootless invokes the following`
+The target `make rootless` invokes the following
 
 ```shell
 sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
@@ -184,8 +181,8 @@ create an entry to your '/etc/hosts' file,
 
 To remove the entry use `make hosts-remove` 
 
-After adjusting '/etc/host', a request to 'example.com:8080' will resolve
-in the same way a request to 'http://localhost:8080' does.
+After adjusting '/etc/host', a request to 'example.com' will resolve
+in the same way a request to 'http://localhost' does.
 
 You don't have to do this, but it makes life a bit easier
 
@@ -294,9 +291,6 @@ is not an exposed published port for the pod.
 Outside of the pod, to reach xqerl on the internet, all requests are via ngnix set up as a 
 [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
 
-When we deploy our pod to our cloud provider, we change our published ports: `
-1. 80:80 for HTTP requests and 
-2. 8433:80 for HTTPS requests
 
 Prior to deploying, we obtain certs for our domain.
  These certs will be in the letsencrypt volume.
