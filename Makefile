@@ -77,12 +77,7 @@ up: or-up init
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	podman ps --all --pod
 	echo && $(DASH)
-	if grep -q '127.0.0.1   $(DNS_DOMAIN)' /etc/hosts
-	then 
 	$(call Dump,$(DOMAIN),$(ROUTE))
-	else
-	$(call Dump,localhost,$(ROUTE))
-	fi
 	echo && $(DASH)
 
 .PHONY: images ## pull docker images

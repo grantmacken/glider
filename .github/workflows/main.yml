@@ -11,20 +11,20 @@ jobs:
     steps:
     - name: checkout repo
       uses: actions/checkout@v3
-    - name: podman info
+    - name: podman info and prior to startin pod
       run: |
         podman version
         sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
         make hosts
-    # - name: xqerl up and flying
-    #   run: make up
-    # - name: checks - ps, log, top
-    #   run: |
-    #     podman ps --pod --all
-    #     printf %60s | tr ' ' '-' && echo
-    #     podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
-    #     printf %60s | tr ' ' '-' && echo
-    #     podman top xq
+    - name: xqerl up and flying
+      run: make up
+    - name: checks - ps, log, top
+      run: |
+        podman ps --pod --all
+        printf %60s | tr ' ' '-' && echo
+        podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
+        printf %60s | tr ' ' '-' && echo
+        podman top xq
     # - name: build site from sources
     #   run: make build
     # - name: check - installed xQuery library modules
