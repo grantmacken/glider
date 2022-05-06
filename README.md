@@ -15,16 +15,21 @@ This project uses a xqerl container image, so you do not need to locally install
 
 # glider: A template repo
 
+This template provides ...
+A XQuery web application development environment will enable you to locally 
+produce, check and remotely deploy muiltiple secure sites for the domains you own.
+
 This template contains ...
 some boilerplate files in the src directory 
 which are used to create an example website.
-Initial source files use 'example.com' domain.
+
+ 
 
 ```
 make up
 make hosts
 make
-w3m -dump http://example.com:8080/
+w3m -dump http://example.com
 ```
 
 TODO
@@ -63,18 +68,40 @@ src
 ```
 
 The source files are not directly copied into thier respective volumes.
-They are *build sources* which are *piped* through a build proccess,
-then stored into a volume. To trigger the build process we just run 
-the default make target `make`.
+ They are *build sources* which are *piped* through a input-output build process stages,
+ and the end result then stored into a container volume.  
+ To trigger the build process we just run the default make target `make`.
+ The **build artifacts** are the docker volumes exported as tar files.
 
-The **build artifacts** are the docker volumes exported as tar files.
+Initial `make` source files use 'example.com' domain.
+ After exprimenting, you are expected to switch to developing using your own DNS domains 
+and using HTTPS. Our letsencrypt certs will obtained independently of a remote site running,
+and be used in or local development envronment.
 
-The remote deployment target, imports these tar artefacts into volumes on the remote host. 
-The end goal is to have a running podman pod serving XQuery enabled, secure HTTPS web pages from your IP domain names.
+The key takeaway point is this setup enables what we develop, run and serve locally 
+will be the same as what runs and serves on the remote cloud instance.
 
-The remote deployment **example** provided will show how to deploy to single Google Compute Engine instance.
-By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
+Once this is set up can have running podman pod serving XQuery enabled, secure HTTPS web pages 
+in our localhost machine and our remote Cloud machine instance. 
+<!--
+ Instead of using self signed certs, 
+  you can use a cheap or free Google Compute Engine instance
+
+ 1. With your Google Gloud Account create a GCE (Google Compute Engine) fedora-coreos-next instance 
+ 2. Migrate your DNS domains to Googles [Cloud DNS](https://cloud.google.com/dns/docs/migrating)
+ 3. Setup your developer Google Gloud IAM service account to have a 'dns.admin' role, and obtain a project key.
+ 4. On the GCE instance create a letsencypt volume
+ 5. Use a 'docker.io/certbot/dns-google' container image instance to import certs into the letsencypt volume.
+ 6. Import the remote container letsencypt volume into your local letsencypt volume
+
+
+Also by using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
 our pod will be capable capable of serving multiple domains from a single cloud instance.
+
+-->
+
+
+
 
 ## Prerequisites
 
@@ -95,31 +122,62 @@ To install see [podman install instructions](https://podman.io/getting-started/i
 
 >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
 
+
+
+
 ## Getting Started
 
 ```
 # 1. clone this repo and cd into the cloned dir
 gh repo clone grantmacken/glider
 cd glider
-# 2. bring the pod up with two running containers
+# 2. enable rootless popdman to operate on port 80 and above 
+make rootless 
+# 3. bring the pod up with two running containers
 #  - 'or' container: nginx as a reverse proxy
 #  - 'xq' container: the xqerl application
 make up
 ```
 You can run `make down` to bring the pod and the 2 running containers run down.
 
+### 2. Enabling rootless to operate on port 80 and above
+
+In our local develpoment environment, with podman we are going to run a pod without root privileges.
+A [shortcoming of rootless podman](https://github.com/containers/podman/blob/main/rootless.md) 
+is that podman can not create containers that bind to ports < 1024,
+unless you explictly tell your system to to so. 
+
+Since our published pod ports will be on port 80 and port 433, 
+we need to implement the suggested workaround. The same workaround is also used if
+you want to expose a privileged port in a 
+[rootless docker setup](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports)
+
+The target `make rootless invokes the following`
+
+```shell
+sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
+# make this change permanent. 
+grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
+	echo 'net.ipv4.ip_unprivileged_port_start=80' | \
+	sudo tee -a /etc/sysctl.conf
+```
+
 ### The .env file
 
 When running `make up` **make** will read from the `.env` file where it will pick up
 *startup* variables like
  - image-version tags: default is the latest versions
- - what ports the pod will listen on: defaults are port 8080 and 8443 
+ - what ports the pod will listen on: defaults are port 80 and 443 
  - timezone: adjust for your timezone 
  - development domain: default is 'example.com'
 
 ### An Example Domain
 
-The default domain is **example.com** which is specified in the .env file
+The default DNS domain value is **example.com** is specified in the .env file
+ under the .env key 'DNS_DOMAIN'.
+
+Since we do not own or control the 'example.com' DNS domain,
+we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
 
 If you run `make hosts` the make target will use the DOMAIN value in the .env to
 create an entry to your '/etc/hosts' file,
@@ -131,9 +189,18 @@ in the same way a request to 'http://localhost:8080' does.
 
 You don't have to do this, but it makes life a bit easier
 
+Our example site will use the classic 'example.com' domain
+
+
+```shell
+grep -q '127.0.0.1   example.com' /etc/hosts || \
+echo '127.0.0.1   example.com' | \
+sudo tee -a /etc/hosts
+```
+
 ### Switching Domains
 
-To switch development to a domain you control, change the DEV_DOMAIN to your domain then run
+To switch development to a domain you control, change the DNS_DOMAIN to your domain then run
  the `make init` target.The target will create some some boilerplate src files for your domain.
 Below we will use 'markup.nz' as an example domain.
 
@@ -218,14 +285,25 @@ state across host reboots or stoping and and restarting the xqerl application ru
 Our xqerl container named **xq** and nginx container named *or* are in a pod named 'podx'.
 When we created our pod, we 
    - published ports: `8080:80` for HTTP requests and '8433:80' for HTTPS requests
-   - set up network named **podman** that the running containers will join. Note: the podman network is the default netwok
+   - set up network named **podman** that the running containers will join. Note: the podman network is the default network
 
 xqerl which listens on port 8081, is running in the internal 'podman' network
-so `http://example.com:8081` is not reachable outside the pod because port 8081
+so `http://example.com:8081` is not reachable outside the pod because port '8081'
 is not an exposed published port for the pod.
 
-Outside of the pod, to reach xqerl all requests are via ngnix set up as a 
+Outside of the pod, to reach xqerl on the internet, all requests are via ngnix set up as a 
 [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
+
+When we deploy our pod to our cloud provider, we change our published ports: `
+1. 80:80 for HTTP requests and 
+2. 8433:80 for HTTPS requests
+
+Prior to deploying, we obtain certs for our domain.
+ These certs will be in the letsencrypt volume.
+
+In deployment 
+1. all HTTP requests will be redirected to the secure HTTPS port
+2. TLS termination occurs the reverse proxy
 
 
 ## Make Targets
@@ -325,7 +403,7 @@ This expression needs to run in the context of the runner docker instance
 make data-domain-list
 ```
 
-## xqerl-code volume: xqerl XQuery web application
+## xqerl-code volume: compiled XQuery modules
 
 The 'src/code' files contain XQuery modules.
 
@@ -343,11 +421,20 @@ XQuery defines two types of modules
  1. library modules: by convention we give these a `.xqm` extension
  2. main modules:  by convention we give these a `.xq` extension
 
+### XQuery library modules
+
  When we invoke `make` the xQuery *library modules* with extension `.xqm` 
  in the src/code directory are compiled by xqerl into beam files to run on the 
- [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)beam). If the code does
- not compile, the beam file will NOT be created or updated. 
- It is these compiled beam files that are stored in the container xqerl-code volume.
+ [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)beam). 
+
+ If the code does not compile, the beam file will NOT be created or updated.
+ When you run `make` and a compile failure happens, 
+ you should get a error line, showing the 
+1. the error src file that failed to compile
+2. the line number where the compile failed
+3. the error line message
+
+Compiled beam files are stored in the container xqerl-code volume.
 
  You can list your available compiled xQuery library modules.
 
@@ -358,7 +445,7 @@ podman exec xq xqerl eval \
 '[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()].'
 ```
 
-### restXQ library modules
+#### restXQ library modules
 
 Like [other](https://docs.basex.org/wiki/RESTXQ) XQuery application servers, the xqerl code server has a restXQ implemention.
 By convention we place our restXQ XQuery library modules in the `src/code/restXQ` directory.
@@ -367,11 +454,7 @@ When we invoke `make` the restXQ modules will compile after other XQuery library
 We do this because the restXQ library will often import other libraries, 
 so we need to compile these libraries first.
 
-
-
-
-
-RestXQ library modules on a basic level associates HTTP request with XQuery functions.
+RestXQ library modules on a basic level associates HTTP requests with XQuery functions.
 In our pod these HTTP requests are filtered via nginx acting as a reverse proxy.
 Before the URI is poxy passed to the xqerl container we rewrite the location path 
 so it includes the **domain name** in the request
@@ -411,14 +494,34 @@ function _:erewhon($ITEM){
 ```
 We can also associate a request with data contained in the xqerl database 
 as Xqerl database indentifiers are also based on a similar uri scheme-domain-path pattern.
-`http://{DOMAIN}/{COLLECTION_ITEM}'
+`http://{DOMAIN}/{COLLECTION_ITEM}`
 
 ```
 nginx receives: https://example.com =>
-rewite proxy pass: http://xq/example.com/index =>
+rewrite proxy pass: http://xq/example.com/index =>
 restXQ path: /example.com/{$ITEM} =>
 XQerl function can utilize db identifier: http://example.com/index
 ```
+
+### XQuery main modules
+
+TODO!
+
+## static-assets volume 
+
+The xqerl(cowboy) server listening on port 8081,
+provides a service which can serve files directly from the file system on the 'xq' container.
+
+Binary and text assets that do not belong in the xqerl database, should be stored as files in the`static-assets` volume.
+These assets may include images, icons, stylesheets, fonts, scripts etc.
+
+Asset source file may be **preprocessed** before they are stored into the `static-assets` volume.
+The preproccesing stages, aka *asset pipeline*, prior to storing the asset may consist of one stage feeding into another.
+
+A preprocessing asset pipeline stage depends on the end result required for the asset type.
+Images may need some form of file size optimisation, stylesheet may be gzipped etc.
+
+
 
 
 <!--
@@ -438,34 +541,6 @@ make
 firefox http://example.com
 ```
 
-## set hosts and enable rootless to operate on port 80
-
-In our local develpoment environment, with podman we are going to run a pod without root privileges.
-A [shortcoming of rootless podman](https://github.com/containers/podman/blob/main/rootless.md) 
-is that podman can not create containers that bind to ports < 1024,
-unless you explictly tell your system to to so. 
-
-Since our published pod ports will be on port 80 and port 433, 
-we need to implement the suggested workaround. The same workaround is also used if
-you want to expose a privalaged port in a 
-[rootless docker setup](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports)
-
-```shell
-grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
-	echo 'net.ipv4.ip_unprivileged_port_start=80' | \
-	sudo tee -a /etc/sysctl.conf
-  sudo sudo sysctl --system
-```
-
-Our example site will use the classic 'example.com' domain
-Since we do not own or control the 'example.com' domain,
-we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
-
-```shell
-grep -q '127.0.0.1   example.com' /etc/hosts || \
-echo '127.0.0.1   example.com' | \
-sudo tee -a /etc/hosts
-```
 
 We have `make init` target for the above code, so no need to type it in.
 --> 
