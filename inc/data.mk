@@ -15,7 +15,7 @@ mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
 xqBuild := $(patsubst src/%,_build/%.stored,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xqBuild)	## from src store xdm data items in db
+data: $(mdBuild) #  $(xqBuild) ## from src store xdm data items in db
 
  #TODO $(xmlBuild) $(jsonBuild)
 
@@ -61,7 +61,7 @@ data-in-pod-list:
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(*) ]##'
-	if podman run  --rm --pod $(POD) $(CURL) \
+	if podman run --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
 		-I --header "Accept: application/xml" \
@@ -83,23 +83,25 @@ _build/data/%.xml: src/data/%.md
 	echo "xqerl database: new cmark XML from markdown source"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
+	 podman run --rm --pod $(POD) $(CURL) \
+			--silent --show-error --connect-timeout 1 --max-time 2 \
+			--write-out '%{http_code}' --output /dev/null \
+			-I --header "Accept: application/xml" \
+			http://localhost:8081/db/$(*)
+	$(DASH)
 	cat $< |
 	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' > $@
+	sed -e '1,2d' | tee $@
+	$(DASH)
 	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
 		--header "Content-Type: application/xml" \
 		--header "Slug: $(basename $(notdir $<))" \
 		--data-binary @- \
-		--output /dev/null \
-		--dump-header - \
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
-	# sleep 1
-	# if [ -e tiny-lr.pid ]; then
-	# curl -s --ipv4  http://localhost:35729/changed?files=$*
-	# fi
 	$(DASH)
 
 _deploy/data/%.xml: _build/data/%.xml
