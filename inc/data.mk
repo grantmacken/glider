@@ -15,7 +15,7 @@ mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
 xqBuild := $(patsubst src/%,_build/%.stored,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) #  $(xqBuild) ## from src store xdm data items in db
+data: $(mdBuild) $(xqBuild) ## from src store xdm data items in db
 
  #TODO $(xmlBuild) $(jsonBuild)
 
@@ -83,16 +83,10 @@ _build/data/%.xml: src/data/%.md
 	echo "xqerl database: new cmark XML from markdown source"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
-	 podman run --rm --pod $(POD) $(CURL) \
-			--silent --show-error --connect-timeout 1 --max-time 2 \
-			--write-out '%{http_code}' --output /dev/null \
-			-I --header "Accept: application/xml" \
-			http://localhost:8081/db/$(*)
-	$(DASH)
+	echo && $(DASH)
 	cat $< |
 	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' | tee $@
-	$(DASH)
+	sed -e '1,2d' > $@
 	cat $@ |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
@@ -102,7 +96,6 @@ _build/data/%.xml: src/data/%.md
 		--data-binary @- \
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
-	$(DASH)
 
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
