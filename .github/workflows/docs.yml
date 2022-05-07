@@ -26,6 +26,5 @@ jobs:
     - name: build documentation
       run: |
         make docs
-        $(DASH)
-        ls -R docs
+        ls -lR docs
 
