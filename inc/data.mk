@@ -135,25 +135,6 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
 
-# TODO
-# _build/data/%.xml: src/data/%.xml
-# [ -d $(dir $@) ] || mkdir -p $(dir $@)
-# echo '##[ $(basename $(notdir $<)) ]##'
-# $(DASH)
-# if grep -qoP 'HTTP/1.1 201 Created' $@
-# then
-# echo " update:  $(shell grep -oP 'location: \K([^\s]+)' $@)"
-# bin/db-update $< | grep -qoP '^HTTP/1.1 204 No Content'
-# touch $@
-# curl --silent --show-error --connect-timeout 1 --max-time 2 \
-# 	--header "Accept: application/xml" \
-# 	$(shell grep -oP 'location: \K([^\s]+)' $@)
-# echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
-# else
-# bin/db-create $< | tee $@
-# grep -qoP 'HTTP/1.1 201 Created' $@
-# fi
-
 _build/data/%.xq.stored: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo " xqerl database: xquery function"

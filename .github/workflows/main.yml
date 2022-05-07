@@ -33,6 +33,8 @@ jobs:
       run: make data-domain-list
     - name: from asset sources put preprocessed files into container file system 
       run: make assets
+    - name: from proxy/config sources upload proxy server configuration files
+      run: make confs
     # - name: restXQ routing check
     #   run: make curl
     # - name:  check - deploy dir
