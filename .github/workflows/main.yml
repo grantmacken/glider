@@ -27,8 +27,8 @@ jobs:
         podman top xq
     - name: build site from sources
       run: make code
-    # - name: check - installed xQuery library modules
-    #   run: make code-library-list
+    - name: check - installed xQuery library modules
+      run: make code-library-list
     # - name: check - XDM items in xqerl database
     #   run: make data-domain-list
     # - name: restXQ routing check
