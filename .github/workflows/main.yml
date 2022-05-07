@@ -23,14 +23,16 @@ jobs:
         podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
-    - name: create XQuery libraries from sources
+    - name: from code sources create XQuery libraries
       run: make code
     - name: check - installed xQuery library modules
       run: make code-library-list
-    - name: put XDM items into xqerl database
+    - name: from data sources put XDM items into xqerl database
       run: make data
     - name: check - XDM items in xqerl database
       run: make data-domain-list
+    - name: from asset sources put preprocessed files into container file system 
+      run: make assets
     # - name: restXQ routing check
     #   run: make curl
     # - name:  check - deploy dir
