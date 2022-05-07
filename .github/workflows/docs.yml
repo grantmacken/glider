@@ -27,4 +27,8 @@ jobs:
       run: |
         make docs
         ls -lR docs
+        git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
+        git config --global user.name "${{ secrets.GIT_USER_NAME }}"
+        git commit -m 'add documentation' -- ./docs
+        git push
 
