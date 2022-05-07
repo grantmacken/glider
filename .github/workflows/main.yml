@@ -11,30 +11,35 @@ jobs:
       uses: actions/checkout@v3
     - name: podman info and prior to startin pod
       run: |
-        podman version
-        sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
-        make hosts
-    - name: xqerl up and flying
-      run: make up
-    - name: checks - ps, log, top
-      run: |
-        podman ps --pod --all
-        printf %60s | tr ' ' '-' && echo
-        podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
-        printf %60s | tr ' ' '-' && echo
-        podman top xq
-    - name: from code sources create XQuery libraries
-      run: make code
-    - name: check - installed xQuery library modules
-      run: make code-library-list
-    - name: from data sources put XDM items into xqerl database
-      run: make data
-    - name: check - XDM items in xqerl database
-      run: make data-domain-list
-    - name: from asset sources put preprocessed files into container file system 
-      run: make assets
-    - name: from proxy/config sources upload proxy server configuration files
-      run: make confs
+        git config --global user.email
+        git config user.email
+    # - name: podman info and prior to startin pod
+    #   run: |
+    #     podman version
+    #     sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
+    #     make hosts
+    # - name: xqerl up and flying
+    #   run: make up
+    # - name: checks - ps, log, top
+    #   run: |
+    #     podman ps --pod --all
+    #     printf %60s | tr ' ' '-' && echo
+    #     podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
+    #     printf %60s | tr ' ' '-' && echo
+    #     podman top xq
+    # - name: from code sources create XQuery libraries
+    #   run: make code
+    # - name: check - installed xQuery library modules
+    #   run: make code-library-list
+    # - name: from data sources put XDM items into xqerl database
+    #   run: make data
+    # - name: check - XDM items in xqerl database
+    #   run: make data-domain-list
+    # - name: from asset sources put preprocessed files into container file system 
+    #   run: make assets
+    # - name: from proxy/config sources upload proxy server configuration files
+    #   run: make confs
+
     # - name: restXQ routing check
     #   run: make curl
     # - name:  check - deploy dir
