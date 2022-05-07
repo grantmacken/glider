@@ -22,4 +22,10 @@ jobs:
         printf %60s | tr ' ' '-' && echo
         podman top xq
     - name: build site from sources
-      run: make build
+      run: make
+    - name: build documentation
+      run: |
+        make docs
+        $(DASH)
+        ls -R docs
+
