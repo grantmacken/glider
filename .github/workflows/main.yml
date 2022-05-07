@@ -9,10 +9,10 @@ jobs:
     steps:
     - name: checkout repo
       uses: actions/checkout@v3
-    - name: podman info and prior to startin pod
+    - name: podman info and prior to starting pod
       run: |
-        git config --global user.email
-        git config user.email
+        git config --global user.email "${{ secrets.git_user_email }}"
+        git config --global user.name "${{ secrets.git_user_email }}"
     # - name: podman info and prior to startin pod
     #   run: |
     #     podman version
