@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches: 'main'
-  pull_request:
-    branches: 'main'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,8 +29,8 @@ jobs:
       run: make code-library-list
     - name: put XDM items into xqerl database
       run: make data
-    # - name: check - XDM items in xqerl database
-    #   run: make data-domain-list
+    - name: check - XDM items in xqerl database
+      run: make data-domain-list
     # - name: restXQ routing check
     #   run: make curl
     # - name:  check - deploy dir
