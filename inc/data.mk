@@ -54,9 +54,9 @@ data-in-pod-list:
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		http://$(DNS_DOMAIN)/db
 
-.PHONY: data-list
-data-list:
-	$(call Dump,db)
+# .PHONY: data-list
+# data-list:
+# 	$(call Dump,$(DOMAIN),/db/$(DOMAIN))
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

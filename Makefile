@@ -311,4 +311,36 @@ src/data/$(DNS_DOMAIN)/default_layout.xq:
 	ls -l $@
 
 
+.PHONY: docs
+docs: 
+	podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
 
+fffff:
+	podman cp src/code/docs.xq xq:/home
+	podman exec xq xqerl eval '
+	M = xqerl:compile("/home/docs.xq"),
+	Arg1 = list_to_binary("src/data/example.com/index.md"),
+	Args = #{<<"src">> => Arg1 }, 
+	case M:main(Args) of
+			Atom when is_atom(Atom) -> Atom;
+			Bin when is_binary(Bin) -> binary_to_list(Bin);
+			Tup when is_tuple(Tup) -> Tup;
+			List when is_list(List) -> [binary_to_list(X) || X <- List];
+			Map when is_map(Map) -> Map;
+			_ -> ["TODO"]
+		end.'
+	podman exec xq xqerl eval '
+
+sssss:
+	podman exec xq xqerl eval "
+	M = xqerl:compile(\"./src/code/${BaseName}.xq\"),
+	Arg1 = list_to_binary(\"${args[0]}\"),
+	Args = #{<<\"src\">> => Arg1 }, 
+	case M:main(Args) of
+			Atom when is_atom(Atom) -> Atom;
+			Bin when is_binary(Bin) -> binary_to_list(Bin);
+			Tup when is_tuple(Tup) -> Tup;
+			List when is_list(List) -> [binary_to_list(X) || X <- List];
+			Map when is_map(Map) -> Map;
+			_ -> 'TODO'
+		end.
