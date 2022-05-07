@@ -21,3 +21,5 @@ jobs:
         podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
+    - name: build site from sources
+      run: make build
