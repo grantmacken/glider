@@ -1,4 +1,4 @@
-name: documentaion
+name: docs
 on:
   workflow_dispatch:
 jobs:
@@ -29,16 +29,14 @@ jobs:
         git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
         git config --global user.name "${{ secrets.GIT_USER_NAME }}"
         # git checkout gh-pages
-        # mkdir -p docs
-        # podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
+        mkdir -p docs
+        podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
         # ls -lR docs
         #git add docs/
         git status --porcelain
-        #git commit -m 'add documentation' -- ./docs
-        #git push
-    - name: Publish on GitHub Pages
-      uses: ftnext/action-push-ghpages@v1.0.0
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        build_dir: docs
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
+        publish_dir: ./docs
+        allow_empty_commit: true
