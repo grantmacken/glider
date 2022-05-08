@@ -18,9 +18,10 @@ restXQBuild := $(patsubst src/%.xqm,_build/%.xqm.txt,$(restXQList))
 # xquery constructors that can be stored as XDM items the xqerl db
 # these can be functions, maps or arrays we build here to do a compile check
 xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(call rwildcard,src/data,*.xq))
+# $(mainModulesBuild) $(xqDataBuild)
 
 .PHONY: code
-code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) $(restXQBuild)
+code: $(libraryModulesBuild) $(restXQBuild)
 
 .PHONY: code-clean
 code-clean: ## remove `make code` build artifacts
