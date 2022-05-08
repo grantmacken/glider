@@ -31,6 +31,7 @@ jobs:
         mkdir -p docs
         podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs
         # ls -lR docs
-        #git add docs/
+        git add docs/
         git status --porcelain
+        git commit -am 'update docs'
 
