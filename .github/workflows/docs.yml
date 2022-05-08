@@ -5,8 +5,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: checkout repo
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
+    - uses: christopherdavenport/create-ghpages-ifnotexists@v1
     - name: podman info and prior to startin pod
       run: |
         podman version
@@ -28,7 +28,7 @@ jobs:
         make docs
         git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
         git config --global user.name "${{ secrets.GIT_USER_NAME }}"
-        git checkout gh-pages
+        # git checkout gh-pages
         # mkdir -p docs
         # podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
         # ls -lR docs
@@ -36,4 +36,9 @@ jobs:
         git status --porcelain
         #git commit -m 'add documentation' -- ./docs
         #git push
+    - name: Publish on GitHub Pages
+      uses: ftnext/action-push-ghpages@v1.0.0
+      with:
+        build_dir: docs
+        github_token: ${{ secrets.GITHUB_TOKEN }}
 
