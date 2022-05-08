@@ -29,8 +29,8 @@ jobs:
         git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
         git config --global user.name "${{ secrets.GIT_USER_NAME }}"
         # git checkout gh-pages
-        mkdir -p docs
-        podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
+        mkdir -p docs/_publish
+        podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/_publish
         # ls -lR docs
         #git add docs/
         git status --porcelain
