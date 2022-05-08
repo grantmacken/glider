@@ -20,13 +20,17 @@ jobs:
         make docs
         git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
         git config --global user.name "${{ secrets.GIT_USER_NAME }}"
+        #git clone git@github.com:grantmacken/glider.git _docs
+        #cd _docs
+        #git rm -rf *
+        # podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs
         git checkout docs
         mkdir -p docs
-        touch docs/.nojekyll
+        touch .nojekyll
         podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs
         ls -lR docs
         git add docs/
         git status --porcelain
         git commit -am 'update docs'
-        git push
+        git push origin docs
 
