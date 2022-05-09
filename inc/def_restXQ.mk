@@ -29,7 +29,7 @@ function _:erewhon($$ITEM){
     else _:notFound($$resMap) 
   } catch * {(
     _:svrErr(
-		map { 'uri': 'http://' || '$(DNS_DOMAIN):$($(POD_HTTP_PORT))/' || $$ITEM, 
+		map { 'uri': 'http://' || '$(DNS_DOMAIN)/' || $$ITEM,
              'problem' : 'xQuery dynamic error',
              'code' : $$err:code, 
              'description' : $$err:description

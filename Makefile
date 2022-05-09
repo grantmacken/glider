@@ -29,9 +29,9 @@ DASH = printf %60s | tr ' ' '-' && echo
 
 ROUTE ?= /index
 DOMAIN ?= $(DNS_DOMAIN)
+# $(call Dump,$(DOMAIN),$(ROUTE))
 Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
 CRL := podman run --pod $(POD) --rm  $(CURL)
-
 # recursive wildcard function
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
@@ -61,6 +61,9 @@ dump:
 	$(call Dump,$(DOMAIN),$(ROUTE))
 
 
+# call  $(call Dump,$(DOMAIN),$(ROUTE))
+
+
 curl: 
 	$(DASH)
 	curl --silent --show-error  \
@@ -73,8 +76,6 @@ curl:
 .PHONY: up
 up: or-up init
 	$(DASH)
-	# access xqerl in the pods internal network
-	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	podman ps --all --pod
 	echo && $(DASH)
 	$(call Dump,$(DOMAIN),$(ROUTE))
