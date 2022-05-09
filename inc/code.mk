@@ -59,6 +59,7 @@ _build/code/%.xqm.txt: src/code/%.xqm
 	echo '##[  $<  ]##'
 	$(call compile,$<,$@)
 	grep -q ':Info: compiled ok!' $@
+	sleep 1
 	fi
 
 _deploy/code/%.txt: _build/code/%.txt
