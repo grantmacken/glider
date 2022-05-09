@@ -325,4 +325,3 @@ docs:
 			Map when is_map(Map) -> Map;
 			_ -> ["TODO"]
 		end.'
-	podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs/
