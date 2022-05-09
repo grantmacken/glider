@@ -5,22 +5,20 @@
 # src/data/{domain}/{collection}/{filename}.{extension}
 ###########################
 mdList  := $(call rwildcard,src/data,*.md)
-# jsonList  := $(call rwildcard,src/data,*.json)
-# xmlList  := $(call rwildcard,src/data,*.xml)
+jsonList  := $(call rwildcard,src/data,*.json)
+xmlList  := $(call rwildcard,src/data,*.xml)
 xqList  :=  $(call rwildcard,src/data,*.xq)
 
 mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
-# TODO jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
-# TODO xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
-xqBuild := $(patsubst src/%,_build/%.stored,$(xqList))
+jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
+xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
+xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xqBuild) ## from src store xdm data items in db
-
- #TODO $(xmlBuild) $(jsonBuild)
+data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
 
 .PHONY: data-deploy
-data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(mdBuild))
+data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) 
 
 .PHONY: data-volume-export
 data-volume-export:
@@ -41,7 +39,7 @@ data-volume-reset: down
 .PHONY: data-clean
 data-clean: ## clean "data" build artefacts
 	echo '##[ $@ ]##'
-	rm -f $(mdBuild) $(xqBuild) _deploy/xqerl-database.tar
+	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
 .PHONY: data-domain-list
 data-domain-list:
@@ -94,8 +92,11 @@ _build/data/%.xml: src/data/%.md
 		--header "Content-Type: application/xml" \
 		--header "Slug: $(basename $(notdir $<))" \
 		--data-binary @- \
+		--output /dev/null \
+		--dump-header - \
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
+	$(DASH)
 
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -135,35 +136,54 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
 
-_build/data/%.xq.stored: src/data/%.xq
+_build/data/%.xml.headers: src/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo " xqerl database: xquery function"
-	echo 'collection: http://$(dir $(*))'
-	echo 'resource: $(basename $(notdir $<))'
-	File=/home/$(shell echo $(*) | sed 's%/%_%' ).xq
+	echo '##[ $(basename $(notdir $<)) ]##'
+	$(DASH)
+	if grep -qoP 'HTTP/1.1 201 Created' $@
+	then
+	echo " update:  $(shell grep -oP 'location: \K([^\s]+)' $@)"
+	bin/db-update $< | grep -qoP '^HTTP/1.1 204 No Content'
+	touch $@
+	curl --silent --show-error --connect-timeout 1 --max-time 2 \
+    --header "Accept: application/xml" \
+		$(shell grep -oP 'location: \K([^\s]+)' $@)
+	echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
+	else
+	bin/db-create $< | tee $@
+	grep -qoP 'HTTP/1.1 201 Created' $@
+	fi
+
+_build/data/%.xq: src/data/%.xq
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if podman ps -a | grep -q $(XQ)
 	then
 	echo '##[ $(notdir $<) ]##'
+	echo " - db XDM item: function"
+	echo ' - collection:  http://$(dir $(*))'
+	echo ' - resource:    $(basename $(notdir $<))'
 	podman cp $< xq:/home/
+	# a compile check
 	podman exec xq xqerl eval '
 	case xqerl:compile("/home/$(notdir $<)") of
-		Err when is_tuple(Err), element(1, Err) == xqError -> 
+		Err when is_tuple(Err), element(1, Err) == xqError ->
 			["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
-		Mod when is_atom(Mod) -> 
+		Mod when is_atom(Mod) ->
 			["$<:1:I: compiled ok! "];
-			_ -> 
-			io:format(["$<:1:E: unknown error"])
-	end.' | jq -r '.[]'
+			_ ->
+			["$<:1:E: unknown error"]
+			end.' | grep -q ':I:'
+	# copy main module into container
 	podman cp src/code/db-store.xq xq:/home/
-	echo -n ' - db function item stored: '
+	# echo -n ' - db function item stored: '
 	podman exec xq xqerl eval '
 	Arg1 = list_to_binary("/home/$(notdir $<)"),
 	Arg2 = list_to_binary("http://$(dir $(*))$(basename $(notdir $<))"),
 	Args = #{<<"src">> => Arg1, <<"uri">> => Arg2},
 	case xqerl:compile("/home/db-store.xq") of
-		Mod when is_atom(Mod) -> 
+		Mod when is_atom(Mod) ->
 		case Mod:main(Args) of
-			Bin when is_binary(Bin) -> 
+			Bin when is_binary(Bin) ->
 			  File = "/home/$(shell echo $(*) | sed 's%/%_%' ).xq",
 				file:write_file(File,binary_to_list(Bin)),
 				xqerl:run(xqerl:compile(File))
@@ -171,12 +191,23 @@ _build/data/%.xq.stored: src/data/%.xq
 			_ -> false
 		end;
 		_ -> false
-		end.'
+		end.' | grep -q true
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." |
+	jq -r '.' | 
+	grep -q 'http://$(dir $(*))$(basename $(notdir $<))'
+	podman exec xq cat "/home/$(shell echo $(*) | sed 's%/%_%' ).xq" > $@
 	fi
-	podman exec xq cat /home/$(shell echo $(*) | sed 's%/%_%' ).xq > $@
-	echo -n ' - db identifier: '
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." | 
-	jq -r '.' | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))'
+
 	
 
+_deploy/data/%.xq: _build/data/%.xq
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $(notdir $<) ]##'
+	echo " - db XDM item: function"
+	echo ' - collection:  http://$(dir $(*))'
+	echo ' - resource:    $(basename $(notdir $<))'
+	cat $< | $(Gcmd) "cat - > $(notdir $<) \
+		&& sudo podman cp $(notdir $<) xq:/home \
+	  && sudo podman exec xq xqerl eval 'xqerl:run(xqerl:compile(\"/home/$(notdir $<)\")).'"
+	#$(Gcmd) 'ls -l $(notdir $<)'
 
