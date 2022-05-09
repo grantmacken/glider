@@ -21,11 +21,13 @@ jobs:
         git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
         git config --global user.name "${{ secrets.GIT_USER_NAME }}"
         podman cp xq:/usr/local/xqerl/priv/static/assets/. ./docs
+        touch docs/.nojekyll
     - name: Deploy 🚀
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: docs # The branch the action should deploy to.
         folder: docs # The folder the action should deploy.
+        clean: true # 
         #git clone git@github.com:grantmacken/glider.git _docs
         #cd _docs
         #git rm -rf *
