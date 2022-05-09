@@ -1,0 +1,13 @@
+define compile
+podman cp $1 xq:/home/
+podman exec xq xqerl eval '
+case xqerl:compile("/home/$(notdir $1)") of
+	Err when is_tuple(Err), element(1, Err) == xqError ->
+		["$1:",integer_to_list(element(2,element(5,Err))),":Error: ",binary_to_list(element(3,Err))];
+	Mod when is_atom(Mod) ->
+		["$1:1:Info: compiled ok! "];
+		_ ->
+		["$1:1:Error: unknown error"]
+		end.' | jq -r '.[]' | tee $2
+endef
+
