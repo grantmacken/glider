@@ -8,6 +8,9 @@ function($$map as map(*)) as element() {
       attribute http-equiv { "Content-Type"},
       attribute content { "text/html; charset=UTF-8"}
       },
+    element base { 
+      attribute href { "/"}
+    },  
     element link { 
       attribute rel {"stylesheet"},
       attribute href { "assets/styles/sakura.css"},
