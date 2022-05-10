@@ -9,7 +9,7 @@ function($$map as map(*)) as element() {
       attribute content { "text/html; charset=UTF-8"}
       },
     element base { 
-      attribute href { "https://grantmacken.github.io/glider/"}
+      attribute href { "https://grantmacken.github.io/glider"}
     },
     element link { 
       attribute rel {"stylesheet"},
