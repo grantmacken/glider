@@ -262,18 +262,43 @@ proxy-after-certs: _deploy/certificates.txt
 
 .PHONY: gce-dns-info
 gce-dns-info:
-	gcloud iam service-accounts list
-	gcloud iam service-accounts keys list --iam-account=certbot@glider-1.iam.gserviceaccount.com
+	ZONE_NAME=$(shell echo "$(DNS_DOMAIN)" | sed 's/\./-/')-zone
+	gcloud dns managed-zones list
 	$(DASH)
-	gcloud iam service-accounts keys list --iam-account=383401241092-compute@developer.gserviceaccount.com 
+	gcloud dns managed-zones describe $${ZONE_NAME}
+	$(DASH)
+	# gcloud dns operations list --zones=$${ZONE_NAME}
+	#$(DASH)
+	#gcloud dns project-info describe $(GCE_PROJECT_ID)
+	#$(DASH)
+	#gcloud iam service-accounts list
+	#gcloud iam service-accounts keys list --iam-account=certbot@glider-1.iam.gserviceaccount.com
+	#$(DASH)
+	#gcloud iam service-accounts keys list --iam-account=383401241092-compute@developer.gserviceaccount.com 
 
+.PHONY: gce-dns-create-managed-zone
+gce-dns-create-managed-zone:
+	ZONE_NAME=$(shell echo "$(DNS_DOMAIN)" | sed 's/\./-/')-zone
+	gcloud dns managed-zones create $${ZONE_NAME} --dns-name='$(DNS_DOMAIN).' --description='managed zone for $(DNS_DOMAIN)'
 
 gce-dns-type-a-record:
-	gcloud dns record-sets create gmack.nz \
-			--rrdatas=$(call gce_ip) \
+	# gcloud dns record-sets create $(DNS_DOMAIN) \
+	# 		--rrdatas=$(call gce_ip) \
+	# 		--ttl=300 \
+	# 		--type=A \
+	# 		--zone=glider-zone
+	gcloud dns record-sets create $(DNS_DOMAIN) \
+			--rrdatas='185.199.108.153,185.199.109.153,185.199.110.153,185.199.111.153' \
 			--ttl=300 \
 			--type=A \
-			--zone=glider-zone
+			--zone=markup-nz-zone
+
+gce-dns-type-cname-record:
+	gcloud dns record-sets create $(DNS_DOMAIN) \
+			--rrdatas='185.199.108.153' \
+			--ttl=300 \
+			--type=CNAME \
+			--zone=markup-nz-zone
 
 .PHONY: gce-service-acc
 gce-service-acc:
