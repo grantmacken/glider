@@ -8,23 +8,20 @@ function($$map as map(*)) as element() {
       attribute http-equiv { "Content-Type"},
       attribute content { "text/html; charset=UTF-8"}
       },
-    element base { 
-      attribute href { "https://grantmacken.github.io/glider"}
-    },
     element link { 
       attribute rel {"stylesheet"},
-      attribute href { "assets/styles/sakura.css"},
+      attribute href { "/glider/assets/styles/sakura.css"},
       attribute type {"text/css"}
     },  
     element link { 
       attribute rel {"icon"},
-      attribute href { "assets/images/favicon.ico"},
+      attribute href { "/gilder/assets/images/favicon.ico"},
       attribute sizes {"any"}
     }
   },
   element body{
     element img { 
-     attribute src { "assets/images/logo.png" },
+     attribute src { "/glider/assets/images/logo.png" },
      attribute alt { "xqerl logo" }
      },
     element h1 { $$map?title   },
