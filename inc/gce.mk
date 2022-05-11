@@ -97,6 +97,7 @@ gce-images:
 	grep -oP 'podx-openresty(.+)$(PROXY_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(OR)'
 	grep -oP 'docker.io/certbot/dns-google' _deploy/image.list || $(Gcmd) 'sudo podman pull docker.io/certbot/dns-google'
 	grep -oP 'podx-w3m(.+)$(W3M_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(W3M)'
+	grep -oP 'podx-curl(.+)$(CURL_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(CMARK)'
 	$(Gcmd) 'sudo podman image ls'
 	$(DASH)
 
@@ -217,13 +218,6 @@ proxy-after-certs: _deploy/certificates.txt
 	$(DASH)
 	$(MAKE) gce-volumes-import
 
-
-
-
-
-	
-
-
 # echo "##[ $(@) ]##"
 # $(MAKE) confs
 # $(DASH)
@@ -287,11 +281,11 @@ gce-dns-type-a-record:
 	# 		--ttl=300 \
 	# 		--type=A \
 	# 		--zone=glider-zone
-	gcloud dns record-sets create $(DNS_DOMAIN) \
-			--rrdatas='185.199.108.153,185.199.109.153,185.199.110.153,185.199.111.153' \
-			--ttl=300 \
-			--type=A \
-			--zone=markup-nz-zone
+	# gcloud dns record-sets create $(DNS_DOMAIN) \
+	# 		--rrdatas='185.199.108.153,185.199.109.153,185.199.110.153,185.199.111.153' \
+	# 		--ttl=300 \
+	# 		--type=A \
+	# 		--zone=markup-nz-zone
 
 gce-dns-type-cname-record:
 	gcloud dns record-sets create $(DNS_DOMAIN) \
