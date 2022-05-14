@@ -39,8 +39,7 @@ ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAdd
 help: 
 	echo 'help'
 
-include inc/*.mk
-include inc/defines/*
+include inc/*
 
 .PHONY: build
 build: code data assets confs 
