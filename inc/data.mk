@@ -4,10 +4,10 @@
 ## the stored XDM item will be detirmined by the initial file extension 
 # src/data/{domain}/{collection}/{filename}.{extension}
 ###########################
-mdList   := $(call rwildcard,src/data,*.md)
-jsonList := $(call rwildcard,src/data,*.json)
+mdList  := $(call rwildcard,src/data,*.md)
+jsonList  := $(call rwildcard,src/data,*.json)
 xmlList  := $(call rwildcard,src/data,*.xml)
-xqList   := $(call rwildcard,src/data,*.xq)
+xqList  :=  $(call rwildcard,src/data,*.xq)
 
 mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
 jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
@@ -15,12 +15,7 @@ xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xqBuild)  # $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
-
-.PHONY: data-clean
-data-clean: ## clean "data" build artefacts
-	echo '##[ $@ ]##'
-	rm $(mdBuild) $(xmlBuild) $(xqBuild) || true
+data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
 
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) 
@@ -38,10 +33,16 @@ data-volume-import: down
 data-volume-reset: down
 	podman volume remove xqerl-database --force || true
 	podman volume create xqerl-database
-	$(MAKE) up data-clean data
+	#podman volume remove xqerl-database
+	
+.PHONY: data-clean
+data-clean: ## clean "data" build artefacts
+	echo '##[ $@ ]##'
+	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
 .PHONY: data-domain-list
 data-domain-list:
+	echo '##[ $@ ]##' #&#10
 	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DNS_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
 
 .PHONY: data-in-pod-list
@@ -49,12 +50,11 @@ data-in-pod-list:
 	$(DASH)
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
-		http://$(DNS_DOMAIN)/db/$(DNS_DOMAIN)
-	echo && $(DASH)
+		https://$(DNS_DOMAIN)/db
 
 .PHONY: data-list
 data-list:
-	$(call Dump,$(DOMAIN),/db/$(DOMAIN))
+	$(call Dump,$(SCHEME),$(DOMAIN),/db/$(DOMAIN))
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -95,6 +95,7 @@ _build/data/%.xml: src/data/%.md
 		--output /dev/null \
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
+	$(DASH)
 
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -150,7 +151,6 @@ _build/data/%.xml.headers: src/data/%.xml
 	else
 	bin/db-create $< | tee $@
 	grep -qoP 'HTTP/1.1 201 Created' $@
-
 	fi
 
 _build/data/%.xq: src/data/%.xq
@@ -190,9 +190,11 @@ _build/data/%.xq: src/data/%.xq
 			_ -> false
 		end;
 		_ -> false
-		end.' | grep -q 'true'
-	$(MAKE) data-domain-list 2>/dev/null | grep -oP 'http://$(dir $(*))$(basename $(notdir $<))'
-	cp $< $@
+		end.' | grep -q true
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." |
+	jq -r '.' | 
+	grep -q 'http://$(dir $(*))$(basename $(notdir $<))'
+	podman exec xq cat "/home/$(shell echo $(*) | sed 's%/%_%' ).xq" > $@
 	fi
 
 _deploy/data/%.xq: _build/data/%.xq
