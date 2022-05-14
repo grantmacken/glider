@@ -27,24 +27,23 @@ MountProxyConf   := type=volume,target=/opt/proxy/conf,source=proxy-conf
 MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
 DASH = printf %60s | tr ' ' '-' && echo
 
-ROUTE ?= /index
+SCHEME ?= https
 DOMAIN ?= $(DNS_DOMAIN)
-# $(call Dump,$(DOMAIN),$(ROUTE))
-Dump = podman run --pod $(POD) --rm $(W3M) -dump http://$(1)$(2)
+ROUTE ?= /index
+Dump = podman run --pod $(POD) --rm $(W3M) -dump $(1)://$(2)$(3)
 CRL := podman run --pod $(POD) --rm  $(CURL)
-# recursive wildcard function
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-#ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
+ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
 
 .help: help
 help: 
 	echo 'help'
 
 include inc/*
+include inc/defines/*
 
 .PHONY: build
-build: code data assets confs
+build: code data assets confs 
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
@@ -58,202 +57,18 @@ watch:
 
 .PHONY: dump
 dump:
-	$(call Dump,$(DOMAIN),$(ROUTE))
-
-
-# call  $(call Dump,$(DOMAIN),$(ROUTE))
-
+	$(call Dump,$(SCHEME),$(DOMAIN),$(ROUTE))
 
 curl: 
 	$(DASH)
 	curl --silent --show-error  \
-		--resolve $(DNS_DOMAIN):$(POD_HTTP_PORT):127.0.0.1 \
 		--connect-timeout 1 \
 		--max-time 2 \
-		http://$(DNS_DOMAIN):$(POD_HTTP_PORT)$(ROUTE)
+		$(SCHEME)://$(DNS_DOMAIN)$(ROUTE)
 	echo && $(DASH)
-
-.PHONY: up
-up: or-up init
-	$(DASH)
-	podman ps --all --pod
-	echo && $(DASH)
-	$(call Dump,$(DOMAIN),$(ROUTE))
-	echo && $(DASH)
-
-.PHONY: images ## pull docker images
-images: 
-	echo "##[ $(@) ]##"
-	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
-	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
-	podman images | grep -oP 'podx-w3m(.+)$(W3M_VER)' || podman pull $(W3M)
-	podman images | grep -oP 'podx-cmark(.+)$(CMARK_VER)' || podman pull $(CMARK)
-	podman images | grep -oP 'podx-curl(.+)$(CURL_VER)' || podman pull $(CURL)
-
-.PHONY: volumes
-volumes: images
-	echo "##[ $(@) ]##"
-	@podman volume exists xqerl-code || podman volume create xqerl-code
-	@podman volume exists xqerl-database || podman volume create xqerl-database
-	@podman volume exists static-assets || podman volume create static-assets
-	@podman volume exists proxy-conf || podman volume create proxy-conf
-	@podman volume exists letsencrypt || podman volume create letsencrypt
-
-.PHONY: volumes-clean
-volumes-clean:
-	echo "##[ $(@) ]##"
-	podman volume remove -f xqerl-code || true
-	podman volume remove -f xqerl-database || true
-	podman volume remove -f static-assets || true
-	#podman volume remove proxy-conf || true
-	#podman volume remove letsencrypt || true
-
-.PHONY: volumes-import
-volumes-import:
-	echo "##[ $(@) ]##"
-	if [ -f _deploy/proxy-conf.tar ] ; then podman volume import proxy-conf _deploy/proxy-conf.tar ;fi
-	if [ -f _deploy/static-assets.tar ] ; then podman volume import static-assets _deploy/static-assets.tar ;fi
-
-.PHONY: podx
-podx: volumes # --publish 80:80 --publish 443:443
-	echo "##[ $(@) ##]"
-	podman pod exists $(POD) || \
-		podman pod create \
-		--publish $(POD_HTTP_PORT):80 \
-	  --publish $(POD_TLS_PORT):443 \
-		--network podman \
-		--name $(@)
-
-.PHONY: down
-down:
-	echo "##[ $(@) ]##" 
-	podman pod list
-	podman ps -a --pod
-	podman pod stop -a || true
-	podman pod rm $(POD) || true
-	podman rm --all
-	podman ps --all --pod
-
-.PHONY: clean
-clean: down init-clean
-	echo "##[ $(@) ]##" 
-	# rm artefacts from 'build' target
-	rm -fr _build
-	# rm artefacts from 'init' target
-	rm -v src/data/$(DNS_DOMAIN)/*  || true
-	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm  || true
-	@systemctl --user stop pod-podx.service || true
-	@systemctl --user disable container-xq.service || true
-	@systemctl --user disable container-or.service || true
-	@systemctl --user disable pod-podx.service || true
-	pushd $(HOME)/.config/systemd/user/
-	rm -f container-or.service container-xq.service pod-podx.service
-	popd
-	@systemctl --user daemon-reload
-	podman system prune --all --force
-	podman system prune --volumes --force
-
-.PHONY: xq-up # in podx listens on port 8081/tcp 
-xq-up: podx
-	echo "##[ $(@) ]##" 
-	if ! podman ps | grep -q $(XQ)
-	then
-	podman run --name xq --pod $(POD) \
-		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
-		--tz=$(TIMEZONE) \
-		--detach $(XQ)
-	sleep 2
-	podman ps -a --pod | grep -oP '$(XQ)(.+)$$'
-	sleep 2 # add bigger delay
-	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
-	fi
-
-# --mount type=bind,destination=/usr/local/xqerl/src,source=$(CURDIR)/src,relabel=shared \
-
-.PHONY: or-up # 
-or-up: xq-up
-	echo "##[ $(@) ]##"
-	if ! podman ps | grep -q $(OR)
-	then
-	podman run --pod $(POD) \
-		--name or \
-		--mount $(MountProxyConf) \
-		--mount $(MountLetsencrypt) \
-		--tz=$(TIMEZONE) \
-		--detach $(OR)
-	podman ps -a --pod | grep -oP '$(OR)(.+)$$'
-	fi
-
-.PHONY: or-down
-or-down: #TODO use systemd instead
-	echo "##[ $(@) ]##"
-	podman stop or || true
-	podman rm or || true
-
-.PHONY: xq-down
-xq-down: #TODO use systemd instead
-	echo "##[ $(@) ]##"
-	podman stop xq || true
-	podman rm xq || true
-
-.PHONY: service
-service: 
-	echo "##[ $(@) ]##"
-	mkdir -p $(HOME)/.config/systemd/user
-	rm -f *.service
-	podman generate systemd --files --name $(POD) 
-	@cat pod-podx.service > $(HOME)/.config/systemd/user/pod-podx.service
-	cat container-xq.service > $(HOME)/.config/systemd/user/container-xq.service
-	cat container-or.service | 
-	sed 's/After=pod-podx.service/After=pod-podx.service container-xq.service/g' |
-	sed '18 i ExecStartPre=/bin/sleep 2' | tee $(HOME)/.config/systemd/user/container-or.service
-	@systemctl --user daemon-reload
-	@systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
-	@systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
-	@systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
-	rm -f *.service
-	#reboot
-
-# Note systemctl should only be used on the pod unit and one should not start 
-
-.PHONY: service-start
-service-start: 
-	@systemctl --user stop pod-podx.service
-	@podman pod list
-	@podman ps -a --pod
-	@podman top xq
-
-.PHONY: service-stop
-service-stop:
-	@systemctl --user stop  pod-podx.service
-
-.PHONY: service-status
-service-status:
-	echo "##[ $(@) ]##"
-	systemctl --user --no-pager status pod-podx.service
-	$(DASH)
-	# journalctl --no-pager -b CONTAINER_NAME=or
-	$(DASH)
-
-.PHONY: journal
-journal:
-	journalctl --user --no-pager -b CONTAINER_NAME=xq
-
-.PHONY: service-clean
-service-clean: 
-	@systemctl --user stop pod-podx.service || true
-	@systemctl --user disable container-xq.service || true
-	@systemctl --user disable container-or.service || true
-	@systemctl --user disable pod-podx.service || true
-	pushd $(HOME)/.config/systemd/user/
-	rm -f container-or.service container-xq.service pod-podx.service
-	popd
-	@systemctl --user daemon-reload
-
 
 .PHONY: rootless
 rootless:
-	sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 	grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || 
 	echo 'net.ipv4.ip_unprivileged_port_start=80' | 
 	sudo tee -a /etc/sysctl.conf
@@ -310,19 +125,3 @@ src/data/$(DNS_DOMAIN)/default_layout.xq:
 	echo '##[ $(notdir $@) ]##'
 	echo "$${default_layout}"  > $@
 	ls -l $@
-
-.PHONY: docs
-docs: 
-	podman cp src/code/docs.xq xq:/home
-	podman exec xq xqerl eval '
-	M = xqerl:compile("/home/docs.xq"),
-	Arg1 = list_to_binary("src/data/example.com/index.md"),
-	Args = #{<<"src">> => Arg1 }, 
-	case M:main(Args) of
-			Atom when is_atom(Atom) -> Atom;
-			Bin when is_binary(Bin) -> binary_to_list(Bin);
-			Tup when is_tuple(Tup) -> Tup;
-			List when is_list(List) -> [binary_to_list(X) || X <- List];
-			Map when is_map(Map) -> Map;
-			_ -> ["TODO"]
-		end.'
