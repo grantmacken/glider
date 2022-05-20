@@ -15,10 +15,18 @@ xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xmlBuild) $(xqBuild)	## from src store xdm data items in db
+data: $(mdBuild) $(xmlBuild) $(xqBuild)## xqerl-db: store xdm data items into db
 
 .PHONY: data-deploy
-data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) 
+data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) ## xqerl-db: store xdm data items into db on remote xq container
+
+.PHONY: data-list
+data-list: ## xqerl-db: list db items
+	$(call Dump,$(SCHEME),$(DOMAIN),/db/)
+
+.PHONY: data-list-remote
+data-list-remote: ## xqerl-db: list db items on remote xq container
+	$(Gcmd) '$(call Dump,$(SCHEME),$(DOMAIN),/db/)'
 
 .PHONY: data-volume-export
 data-volume-export:
@@ -29,14 +37,12 @@ data-volume-import: down
 	echo "##[ $(@) ]##"
 	podman volume import xqerl-database  _deploy/xqerl-database.tar
 
-.PHONY: data-volume-reset
-data-volume-reset: down
-	podman volume remove xqerl-database --force || true
-	podman volume create xqerl-database
-	#podman volume remove xqerl-database
+.PHONY: data-reset
+data-reset: service-stop volumes-remove-xqerl-database volumes data-clean service-start
+	echo '##[ $@ ]##'
 	
 .PHONY: data-clean
-data-clean: ## clean "data" build artefacts
+data-clean:
 	echo '##[ $@ ]##'
 	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
@@ -51,10 +57,6 @@ data-in-pod-list:
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		https://$(DNS_DOMAIN)/db
-
-.PHONY: data-list
-data-list:
-	$(call Dump,$(SCHEME),$(DOMAIN),/db/$(DOMAIN))
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -100,7 +102,7 @@ _build/data/%.xml: src/data/%.md
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $* ]##'
-	if $(Gcmd) 'sudo podman run  --rm --pod $(POD) $(CURL) \
+	if $(Gcmd) 'podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
 		-I --header "Accept: application/xml" \
@@ -108,7 +110,7 @@ _deploy/data/%.xml: _build/data/%.xml
 	then 
 	echo "remote xqerl database: update cmark XML from markdown source"
 	echo ' - db item [ http://$(*) ]'
-	cat $< | $(Gcmd) 'cat - | tee | sudo podman run --rm  --pod $(POD) --interactive $(CURL) \
+	cat $< | $(Gcmd) 'cat - | podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--write-out '%{http_code}' --output /dev/null \
     -X PUT \
@@ -121,7 +123,7 @@ _deploy/data/%.xml: _build/data/%.xml
 	echo "xqerl database: cmark XML from markdown"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
-	cat $< | $(Gcmd) 'cat - | tee | sudo podman run --rm  --pod $(POD) --interactive $(CURL) \
+	cat $< | $(Gcmd) 'cat - | podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--header "Content-Type: application/xml" \
 		--header "Slug: $(basename $(notdir $<))" \
@@ -130,7 +132,7 @@ _deploy/data/%.xml: _build/data/%.xml
 		--dump-header - \
 		http://localhost:8081/db/$(dir $(*))' | grep -q 201
 	fi
-	$(Gcmd) 'sudo podman run --rm  --pod $(POD) $(CURL) \
+	$(Gcmd) 'podman run --rm  --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
@@ -204,7 +206,7 @@ _deploy/data/%.xq: _build/data/%.xq
 	echo ' - collection:  http://$(dir $(*))'
 	echo ' - resource:    $(basename $(notdir $<))'
 	cat $< | $(Gcmd) "cat - > $(notdir $<) \
-		&& sudo podman cp $(notdir $<) xq:/home \
-	  && sudo podman exec xq xqerl eval 'xqerl:run(xqerl:compile(\"/home/$(notdir $<)\")).'"
+		&& podman cp $(notdir $<) xq:/home \
+	  && podman exec xq xqerl eval 'xqerl:run(xqerl:compile(\"/home/$(notdir $<)\")).'"
 	#$(Gcmd) 'ls -l $(notdir $<)'
 
