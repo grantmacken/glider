@@ -36,9 +36,12 @@ CRL := podman run --pod $(POD) --rm  $(CURL)
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
 
-.help: help
-help:
-	echo 'help'
+.PHONY: help
+help: ## show this help 
+	cat $(MAKEFILE_LIST) | 
+	grep -oP '^[a-zA-Z_-]+:.*?## .*$$' |
+	sort |
+	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 include inc/*
 
@@ -72,7 +75,7 @@ rootless:
 	grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || 
 	echo 'net.ipv4.ip_unprivileged_port_start=80' | 
 	sudo tee -a /etc/sysctl.conf
-	sudo sudo sysctl --system
+	sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 
 .PHONY: hosts
 hosts:
