@@ -1,12 +1,13 @@
-###########################
-### XQUERY CODE ###
+## XQUERY CODE ##
 # 1. main modules: on write, compiled
 # 2. library modules: on write, compiled, registered lib
-# The modules are in a flat directory structure: src/code/{name}.{xq or xqm}
+# Exept for restXQ modules,  modules are in a flat directory structure: src/code/{name}.{xq or xqm}
 # xq for main modules 
 # xqm for library modules
-# add restXQ routes library to compile last
-###########################
+# restXQ modules are the src/restXQ dir
+# The naming convention is to name the restXQ modules after dns domains
+# The restXQ module for a domain will define website dispatch routes
+# ----------------------------------------
 libraryModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xqm) $(wildcard src/code/restXQ/*.xqm)) 
 mainModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xq))
 # restXQBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/restXQ/*.xqm)) 
@@ -15,17 +16,16 @@ mainModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xq))
 xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(call rwildcard,src/data,*.xq))
 # $(mainModulesBuild) $(xqDataBuild)
 
-.PHONY: code
-code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) 
+.PHONY: code 
+code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) ## XQuery modules: register library modules
 
 .PHONY: code-deploy
-code-deploy:  $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild) ) 
+code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild)) ## XQuery modules: register library modules on remote xq container
 
 .PHONY: code-clean
-code-clean: ## remove `make code` build artifacts
+code-clean: # remove: `make code` build artifacts
 	echo '##[ $@ ]##'
 	rm -f  $(libraryModulesBuild)  $(mainModulesBuild) _deploy/xqerl-code.tar
-
 
 .PHONY: code-volume-export
 code-volume-export:
@@ -37,20 +37,23 @@ code-volume-import: down
 	echo "##[ $(@) ]##"
 	podman volume import xqerl-code  _deploy/xqerl-code.tar
 
-.PHONY: code-volume-reset
-code-volume-reset: down
-	echo "##[ $(@) ]##"
-	podman volume remove xqerl-code --force || true
-	podman volume create xqerl-code
+.PHONY: code-reset
+code-reset: service-stop volumes-remove-xqerl-code volumes code-clean service-start
 
 .PHONY: code-library-list
-code-library-list: ## list availaiable library modules
+code-library-list: ## XQuery modules: list registered XQuery library modules
 	echo "##[ $(@) ##]"
 	if podman ps -a | grep -q $(XQ)
 	then
 	podman exec xq xqerl eval '[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()].' | 
 	jq -r '.[]'
 	fi
+
+.PHONY: code-deployed-library-list
+code-deployed-library-list:## XQuery modules: list registered XQuery library modules on remote xq container
+	echo "##[ $(@) ##]"
+	$(Gcmd) 'podman exec xq xqerl eval "[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()]."' | 
+	jq -r '.[]'
 
 _build/code/%.xqm.txt: src/code/%.xqm
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -69,8 +72,8 @@ _deploy/code/%.txt: _build/code/%.txt
 	echo '##[ $(*) ]##'
 	echo '##[ $(notdir $(*)) ]##'
 	cat src/code/$* | $(Gcmd) "cat - > $(notdir $(*))  \
-		&& sudo podman cp $(notdir $(*)) xq:/home \
-	  && sudo podman exec xq xqerl eval 'xqerl:compile(\"/home/$(notdir $(*))\").'" | tee $@
+		&& podman cp $(notdir $(*)) xq:/home \
+	  && podman exec xq xqerl eval 'xqerl:compile(\"/home/$(notdir $(*))\").'" | tee $@
 	fi
 
 _build/code/%.xq.txt: src/code/%.xq
@@ -107,7 +110,5 @@ _build/data/%.xq.txt: src/data/%.xq
 				io:format(["$<:1:E: unknown error"])
 		end.' | jq -r '.[]' | tee $@
 	fi
-
-
 
 
