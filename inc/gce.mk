@@ -6,9 +6,10 @@ GCE_MACHINE_TYPE ?= e2-small
 GCE_IMAGE_FAMILY ?= fedora-coreos-next
 GCE_NAME ?= core@$(GCE_INSTANCE_NAME)
 GCE_DNS_ZONE ?= glider-zone
-GCE_KEY=iam-service-account-key.json
+GCE_KEY := iam-service-account-key.json
+FCOS_HOME := /var/home/core
 # comma separated list
-GCE_DOMAINS ?= gmack.nz,markup.nz
+GCE_DOMAINS ?= 
 
 ######################
 # https://cloud.google.com/dns/docs/migrating
@@ -63,7 +64,6 @@ gce-instance-info:
 		#$(DASH)
 		#dig gmack.nz @ns-cloud-a1.googledomains.com.
 
-
 PHONY: gce-instance-delete
 gce-instance-delete: 
 		@gcloud compute instances delete $(GCE_INSTANCE_NAME)
@@ -72,36 +72,31 @@ gce-instance-delete:
 .PHONY: gce-images ## gce pull docker images
 gce-images:
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman image ls' > _deploy/image.list
-	grep -oP 'xqerl(.+)$(XQERL_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(XQ)'
-	grep -oP 'podx-openresty(.+)$(PROXY_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(OR)'
-	grep -oP 'docker.io/certbot/dns-google' _deploy/image.list || $(Gcmd) 'sudo podman pull docker.io/certbot/dns-google'
-	grep -oP 'podx-w3m(.+)$(W3M_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(W3M)'
-	grep -oP 'podx-curl(.+)$(CURL_VER)' _deploy/image.list || $(Gcmd) 'sudo podman pull $(CMARK)'
+	$(Gcmd) 'podman image ls' > _deploy/image.list
+	grep -oP 'xqerl(.+)$(XQERL_VER)' _deploy/image.list || $(Gcmd) 'podman pull $(XQ)'
+	grep -oP 'podx-openresty(.+)$(PROXY_VER)' _deploy/image.list || $(Gcmd) 'podman pull $(OR)'
+	grep -oP 'docker.io/certbot/dns-google' _deploy/image.list || $(Gcmd) 'podman pull docker.io/certbot/dns-google'
 	$(Gcmd) 'sudo podman image ls'
 	$(DASH)
 
-# GCE VOLUMES
+.PHONY: gce-clean
+gce-clean:
+	echo "##[ $(@) ]##"
+	 $(Gcmd) 'podman pod stop --all' || true
+	 $(Gcmd) 'podman pod prune --force' || true
+	$(DASH)
 
+# GCE VOLUMES
+#
 .PHONY: gce-volumes ## gce create docker volumes
 gce-volumes:
 	$(Gcmd) \
-		'sudo podman volume exists xqerl-code || sudo podman volume create xqerl-code; \
-		sudo podman volume exists xqerl-database || sudo podman volume create xqerl-database; \
-		sudo podman volume exists static-assets || sudo podman volume create static-assets; \
-		sudo podman volume exists proxy-conf || sudo podman volume create proxy-conf; \
-		sudo podman volume exists letsencrypt || sudo podman volume create letsencrypt; \
-		sudo podman volume ls '
-
-.PHONY: gce-volumes-clean
-gce-volumes-clean:
-	echo "##[ $(@) ]##"
-	$(Gcmd) \
-		'sudo podman volume exists xqerl-code && sudo podman volume remove xqerl-code; \
-		sudo podman volume exists xqerl-database && sudo podman volume remove xqerl-database; \
-		sudo podman volume exists static-assets && sudo podman volume remove static-assets; \
-		sudo podman volume exists proxy-conf && sudo podman volume remove proxy-conf; \
-		sudo podman volume ls '
+		'podman volume exists xqerl-code || podman volume create xqerl-code; \
+		podman volume exists xqerl-database || podman volume create xqerl-database; \
+		podman volume exists static-assets || podman volume create static-assets; \
+		podman volume exists proxy-conf ||  podman volume create proxy-conf; \
+		podman volume exists letsencrypt || podman volume create letsencrypt; \
+		podman volume ls '
 
 # after we have created volumes we can import from our local dev envronment
 # 1. static-assets volume
@@ -109,67 +104,142 @@ gce-volumes-clean:
 # 3. xqerl-database
 # 3. xqerl-code
 
-.PHONY: gce-volumes-import
-gce-volumes-import: $(patsubst %.tar,%.txt,$(wildcard _deploy/*.tar))
 
-_deploy/%.txt: _deploy/%.tar
+# 1. stop the pod: 
+# 2. export the code volume
+# 3. export the data volume
+# 4. deploy the volumes on GCE
+# 4. re service: 
+# NOTE: code and data stuff might be written on kill so we stop the service first 
+# NOTE: proxy-conf and static-assets are file-system files that are already tarred 
+.PHONY: deploy
+deploy: service-stop data-volume-export code-volume-export deploy-volumes service-start
+
+.PHONY: deploy-volumes
+deploy-volumes: $(patsubst _deploy/%.tar,_deploy/status/%.txt,$(wildcard _deploy/*.tar))
+
+_deploy/status/%.txt: _deploy/%.tar
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@echo '## $(basename $(notdir $<)) ##'
 	gcloud compute scp $(<) $(GCE_NAME):/home/core/$(notdir $<)
-	$(Gcmd) 'sudo podman volume import $(basename $(notdir $<)) /home/core/$(notdir $<)'
+	$(Gcmd) 'podman volume import $(basename $(notdir $<)) /home/core/$(notdir $<)' > $@
+
+.PHONY: remote-pod-start
+remote-pod-start: 
+	echo "##[ $(@) ]##"
+	echo -n ' - check pod-$(POD) : '
+	if $(Gcmd) 'systemctl --user is-enabled pod-$(POD)'
+	then
+	# $(Gcmd) 'systemctl --user daemon-reload'
+	$(Gcmd) 'systemctl --user restart pod-$(POD)'
+	else
+	$(Gcmd) 'podman pod start $(POD)' || true
+	echo 'NOT enabled'
+	fi
+	$(Gcmd) 'podman ps --all --pod'
+
+.PHONY: remote-pod-stop
+remote-pod-stop:
+	echo "##[ $(@) ]##"
+	$(Gcmd) 'if systemctl --user is-enabled pod-$(POD); then \
+		systemctl --user stop pod-$(POD); \
+		else \
+		podman pod stop $(POD);
+		fi && podman ps --all --pod '
+
+.PHONY: remote-pod-status
+remote-pod-status:
+	echo "##[ $(@) ]##"
+	# $(Gcmd) 'loginctl show-user  core'
+	# $(DASH)
+	# $(Gcmd) 'systemctl --no-pager --user status pod-$(POD)'
+	# $(DASH)
+	# $(Gcmd) 'journalctl --no-pager  --user-unit=pod-$(POD)'
+	# $(DASH)
+	 $(Gcmd) 'journalctl --no-pager -n1 -r -o cat --user-unit=container-or'
+	$(DASH)
+	$(Gcmd) 'journalctl --no-pager -n3 -r -o cat --user-unit=container-xq'
+	# $(Gcmd) 'journalctl --no-pager -r -n10 --since "1 hour ago" -o json --user-unit=container-xq' | jq '.MESSAGE'
+	$(DASH)
 
 ##############################
-## GCE UP
+## REMOTE UP
 ##############################
 
-.PHONY: gce-up
-gce-up: gce-or-up
+.PHONY: remote-up
+remote-up: remote-or-up
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman ps -a --pod' | tee _deploy/up.txt
+	$(Gcmd) 'podman ps --all --pod' | tee _deploy/up.txt
 
-.PHONY: gce-down
-gce-down:
+.PHONY: remote-down
+remote-down:
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman pod rm $(POD) --force' || true
-	$(Gcmd) 'sudo podman ps --all --pod' | tee _deploy/up.txt
-	$(Gcmd) 'sudo podman volume ls'
+	$(Gcmd) 'podman pod stop $(POD)' || true
+	$(Gcmd) 'podman pod prune' || true
+	$(Gcmd) 'podman ps --all --pod' | tee _deploy/up.txt
 
-.PHONY: gce-podx
-gce-podx: # --publish 80:80 --publish 443:443
+.PHONY: remote-rootless
+remote-rootless:
+	$(Gcmd) 'grep -q "net.ipv4.ip_unprivileged_port_start=80" /etc/sysctl.conf || echo "net.ipv4.ip_unprivileged_port_start=80" | sudo tee -a /etc/sysctl.conf' 
+	$(Gcmd) 'sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80'
+	# $(Gcmd) 'loginctl enable-linger core'
+
+.PHONY: remote-pod-up
+remote-pod-up: remote-rootless
 	echo "##[ $(@) ]##"
-	$(Gcmd) 'sudo podman pod exists $(POD) || sudo podman pod create --name $(POD) -p 80:80 -p 443:443 --network podman'
-	$(DASH)
-	$(Gcmd) 'sudo podman pod list'
-	$(DASH)
+	$(Gcmd) 'podman pod exists $(POD) || \
+		podman pod create --name $(POD) -p 80:80 -p 443:443 --network podman'
 
-.PHONY: gce-xq-up
-gce-xq-up: gce-podx
-	$(Gcmd) 'sudo podman run --rm --name xq --pod $(POD) \
+.PHONY: remote-xq-up
+remote-xq-up: remote-pod-up
+	if ! $(Gcmd) 'podman ps -a' | grep -q $(XQ)
+	then
+	$(Gcmd) 'podman run --name xq --pod $(POD) \
 		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
 		--tz=$(TIMEZONE) \
 		--detach $(XQ)'
+	sleep 1
+	$(Gcmd) 'podman ps -a --pod' | grep -oP '$(XQ)(.+)$$'
+	sleep 1
+	$(Gcmd) 'podman exec xq xqerl eval "application:ensure_all_started(xqerl)."'
+	fi
 
-.PHONY: gce-or-up
-gce-or-up: gce-xq-up
-	echo "##[ $(@) ]##" 
-	$(Gcmd) 'sudo podman run --rm --name or --pod $(POD) \
+.PHONY: remote-or-up
+remote-or-up: remote-xq-up
+	echo "##[ $(@) ]##"
+	if ! $(Gcmd) 'podman ps -a' | grep -q $(OR)
+	then
+	$(Gcmd) 'podman run --name or --pod $(POD) \
 		--mount $(MountLetsencrypt) \
 		--mount $(MountProxyConf) \
 		--tz=$(TIMEZONE) \
 		--detach $(OR)'
+	$(Gcmd) 'podman ps -a --pod' | grep -oP '$(OR)(.+)$$'
+	fi
 
-# After we have the pod running 
-# 1. xqerl-database volume
-# 2. xqerl-code volume
+.PHONY: remote-service
+remote-service: 
+	echo "##[ $(@) ]##"
+	$(Gcmd) 'loginctl enable-linger core'
+	$(Gcmd) 'mkdir -v -p ./.config/systemd/user'
+	$(Gcmd) 'podman generate systemd --files --name $(POD)'
+	$(Gcmd) 'cat pod-podx.service > ./.config/systemd/user/pod-podx.service'
+	$(Gcmd) 'cat container-xq.service > ./.config/systemd/user/container-xq.service'
+	$(Gcmd) 'cat container-or.service |
+	sed "s/After=pod-podx.service/After=pod-podx.service container-xq.service/g" | \
+		sed "18 i ExecStartPre=/usr/bin/sleep 2" > ./.config/systemd/user/container-or.service'
+	$(Gcmd) 'systemctl --user daemon-reload'
+	$(Gcmd) 'systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service'
+	$(Gcmd) 'systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service'
+	$(Gcmd) 'systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service'
+	
+	.PHONY: remote-service-clean
+remote-service-clean: 
+	$(Gcmd) 'systemctl --user stop pod-podx.service' || true
+	$(Gcmd) 'systemctl --user disable container-xq.service' || true
+	$(Gcmd) 'systemctl --user disable container-or.service' || true
+	$(Gcmd) 'systemctl --user disable pod-podx.service' || true
+	$(Gcmd) 'rm -f ./.config/systemd/user/container-or.service ./.config/systemd/user/container-xq.service ./.config/systemd/user/pod-podx.service'
+	$(Gcmd) 'systemctl --user daemon-reload'
 
-.PHONY: gce-code-library-list
-gce-code-library-list: ## gce list availaiable library modules
-	echo "##[ $(@) ##]"
-	$(Gcmd) "sudo podman exec xq xqerl eval '[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()].'"  | 
-	tee _deploy/code-library.list
-
-.PHONY: gce-data-domain-list
-gce-data-domain-list:
-	echo '##[ $@ ]##'
-	$(Gcmd) 'curl -s https://$(DNS_DOMAIN)/db' |
-	tee _deploy/code-library.list
 

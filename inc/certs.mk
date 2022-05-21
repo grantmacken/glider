@@ -245,3 +245,8 @@ check-proxy-certs:
 	openssl s_client -connect $(DNS_DOMAIN):443 </dev/null 2>/dev/null | 
 	openssl x509 -inform pem -text | grep -oP 'DNS:.+'
 	echo && $(DASH)
+
+.PHONY: certs-volume-export
+ certs-volume-export:
+	podman volume export letsencrypt > _deploy/letsencrypt.tar
+

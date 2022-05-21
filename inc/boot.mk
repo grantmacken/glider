@@ -34,13 +34,24 @@ volumes: images
 	@podman volume exists letsencrypt || podman volume create letsencrypt
 
 .PHONY: volumes-clean
-volumes-clean:
+volumes-clean: volumes-remove-static-assets volumes-remove-xqerl-code
 	echo "##[ $(@) ]##"
-	podman volume remove -f xqerl-code || true
-	podman volume remove -f xqerl-database || true
-	podman volume remove -f static-assets || true
-	#podman volume remove proxy-conf || true
-	#podman volume remove letsencrypt || true
+
+.PHONY: volumes-remove-static-assets
+volumes-remove-static-assets:
+	echo '##[ $@ ]##'
+	podman volume remove static-assets || true
+
+.PHONY: volumes-remove-xqerl-code
+volumes-remove-xqerl-code:
+	echo '##[ $@ ]##'
+	podman volume remove xqerl-code || true
+
+.PHONY: volumes-remove-xqerl-database
+volumes-remove-xqerl-database:
+	echo '##[ $@ ]##'
+	podman volume remove xqerl-database || true
+
 
 .PHONY: volumes-import
 volumes-import:

@@ -1,6 +1,7 @@
 .PHONY: service
 service: 
 	echo "##[ $(@) ]##"
+	#loginctl enable-linger $(USER) || true
 	mkdir -p $(HOME)/.config/systemd/user
 	rm -f *.service
 	podman generate systemd --files --name $(POD) 
@@ -20,14 +21,16 @@ service:
 
 .PHONY: service-start
 service-start: 
-	@systemctl --user stop pod-podx.service
-	@podman pod list
-	@podman ps -a --pod
-	@podman top xq
+	systemctl --user start pod-podx.service
+	$(DASH)
+	systemctl --user --no-pager status pod-podx.service
+	$(DASH)
+	podman ps -a --pod
+	$(DASH)
 
 .PHONY: service-stop
 service-stop:
-	@systemctl --user stop  pod-podx.service
+	@systemctl --user stop  pod-podx.service || true
 
 .PHONY: service-status
 service-status:
