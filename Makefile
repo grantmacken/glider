@@ -46,7 +46,7 @@ help: ## show this help
 include inc/*
 
 .PHONY: build
-build: code data assets confs 
+build: code data assets confs ## default target
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
@@ -54,7 +54,7 @@ build-clean: confs-clean code-clean data-clean assets-clean
 .PHONY: watch
 watch:
 	while true; do \
-        clear && $(MAKE) --silent code 2>/dev/null || true; \
+        clear && $(MAKE) 2>/dev/null || true; \
         inotifywait -qre close_write ./src || true; \
     done
 
