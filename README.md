@@ -13,6 +13,13 @@ Xqerl is an erlang application that runs on top of the Erlang virtual machine [B
 [Erlang](https://en.wikipedia.org/wiki/Erlang_(programming_language)) applications have a reputation for being long running, fault tolerant and reliable.
 This project uses a xqerl container image, so you do not need to locally install erlang or even know much about erlang.
 
+
+## docs
+
+1. as a [service](docs/as-a-service.md)
+
+
+
 # glider: A template repo
 
 This template provides ...
