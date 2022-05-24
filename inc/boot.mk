@@ -15,11 +15,9 @@ up: or-up init
 	echo && $(DASH)
 	if grep -oP '$(DNS_DOMAIN)' /etc/hosts &>/dev/null
 	then
-	$(call Dump,'http',$(DNS_DOMAIN),$(ROUTE))
-	echo && $(DASH)
-	$(call Dump,'http',localhost,$(ROUTE))
+	$(call Dump,'http',$(DNS_DOMAIN),/xqerl)
 	else
-	$(call Dump,'http',localhost,$(ROUTE))
+	$(call Dump,'http',localhost,/xqerl)
 	fi
 	echo && $(DASH)
 
