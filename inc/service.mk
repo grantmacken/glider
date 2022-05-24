@@ -10,7 +10,7 @@ service:
 	cat container-or.service | 
 	sed 's/After=pod-podx.service/After=pod-podx.service container-xq.service/g' |
 	sed '18 i ExecStartPre=/bin/sleep 2' | tee $(HOME)/.config/systemd/user/container-or.service
-	systemctl --user daemon-reload
+	# systemctl --user daemon-reload
 	systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
 	systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
 	systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service

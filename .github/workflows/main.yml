@@ -24,7 +24,7 @@ jobs:
         printf %60s | tr ' ' '-' && echo
         podman top xq
     - name: run pod as a service
-      run: make service
+      run: systemctl --user status
 
 
     # - name: from code sources create XQuery libraries
