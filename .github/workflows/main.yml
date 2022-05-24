@@ -23,6 +23,10 @@ jobs:
         podman logs xq | grep -oP "started_at: 'xqerl@127.0.0.1'"
         printf %60s | tr ' ' '-' && echo
         podman top xq
+    - name: run pod as a service
+      run: make service
+
+
     # - name: from code sources create XQuery libraries
     #   run: make code
     # - name: check - installed xQuery library modules

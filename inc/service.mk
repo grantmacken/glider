@@ -1,20 +1,21 @@
 .PHONY: service
 service: 
 	echo "##[ $(@) ]##"
-	#loginctl enable-linger $(USER) || true
+	loginctl enable-linger $(USER) || true
 	mkdir -p $(HOME)/.config/systemd/user
 	rm -f *.service
 	podman generate systemd --files --name $(POD) 
-	@cat pod-podx.service > $(HOME)/.config/systemd/user/pod-podx.service
+	cat pod-podx.service > $(HOME)/.config/systemd/user/pod-podx.service
 	cat container-xq.service > $(HOME)/.config/systemd/user/container-xq.service
 	cat container-or.service | 
 	sed 's/After=pod-podx.service/After=pod-podx.service container-xq.service/g' |
 	sed '18 i ExecStartPre=/bin/sleep 2' | tee $(HOME)/.config/systemd/user/container-or.service
-	@systemctl --user daemon-reload
-	@systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
-	@systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
-	@systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
-	rm -f *.service
+	systemctl --user daemon-reload
+	systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
+	systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
+	systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
+	# systemctl --user restart pod-podx.service &>/dev/null
+	# rm -f *.service
 	#reboot
 
 # Note systemctl should only be used on the pod unit and one should not start 
