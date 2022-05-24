@@ -42,10 +42,15 @@ our pod will be capable capable of serving multiple dns domains from one cloud i
 
   - inotify-tools: used to watch for file changes in our src directory
 
-  - Google Cloud Platform account: For web app cloud deployment we will be 
-  using the Google Cloud Platform(GCP) [account](https://cloud.google.com/free)
+  - A [Google Cloud Platform(https://cloud.google.com/free) account: 
+  To demonstrate how to deploy to the cloud, we use the Google Cloud Platform(GCP)
   GCP has a [Free Tier](https://cloud.google.com/free) compute engine which won't cost you anything.
-  You can use a free tier compute engine instance to test the deployment then scale up as required.
+  For this project, you can use a free tier compute engine instance to test the deployment then scale up as required.
+
+  - [gcloud cli](https://cloud.google.com/sdk/gcloud): the command line cli is used to
+   - create and manage our Compute Engine virtual machine instance
+   - managing DNS managed zones and record sets. 
+   - executing Podman commands on the Compute Engine virtual machine instance
 
 ## Project Documentation
 
