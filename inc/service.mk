@@ -19,7 +19,7 @@ service:
 	systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
 	systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
 	systemctl --user restart pod-podx.service &>/dev/null
-	# rm -f *.service
+	rm -f *.service
 	#reboot
 
 # Note systemctl should only be used on the pod unit and one should not start 

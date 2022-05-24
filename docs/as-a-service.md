@@ -5,8 +5,7 @@ A systemd **user** service does not ran as root but under a login user.
 This will mean the xqerl XQuery application server will be available 
 to you when your operating system boots.
 
-NOTE: This is for a modern linux OS only which 
-will support linux kernel [Control Group v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
+NOTE: This is for a modern linux OS only which supports linux kernel [Control Group v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html). 
 
 ```
 make service

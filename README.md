@@ -26,13 +26,39 @@ can be remotely **deployed** using a single [Google Compute Engine](https://clou
 By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
 our pod will be capable capable of serving multiple dns domains from one cloud instance.
 
+## Requirements
+
+ For this project you will need 
+  - a modern linux OS which supports the linux kernel [cgroup2 component](https://facebookmicrosites.github.io/cgroup2/docs/overview).
+
+  - [Podman](https://podman.io/podman): the pod manager for our containers.
+  >  Podman is a daemonless container engine for developing, managing, and running OCI Containers on your Linux System
+  Version 4 or later is required
+  To install see [podman install instructions](https://podman.io/getting-started/installation)
+
+  - Make: used as a build tool and a task runner.
+  > Makefiles are machine-readable documentation that make your workflow reproducible
+  cited from [Why Use Make](https://bost.ocks.org/mike/make/)
+
+  - inotify-tools: used to watch for file changes in our src directory
+
+  - Google Cloud Platform account: For web app cloud deployment we will be 
+  using the Google Cloud Platform(GCP) [account](https://cloud.google.com/free)
+  GCP has a [Free Tier](https://cloud.google.com/free) compute engine which won't cost you anything.
+  You can use a free tier compute engine instance to test the deployment then scale up as required.
+
 ## Project Documentation
 
-1. [Getting Started](docs/getting-started.md)
+1. [Getting Started](docs/getting-started.md): boot up the podman pod, 
+ which will run the xqerl XQuery Application Server behind a nginx reverse proxy
+2. [As A Service](docs/as-a-service.md): turn the pod running xqerl XQuery
+ Application Server into a systemd service
+
+
+
 
 <!--
-2. [xqerl as a service](docs/as-a-service.md)
-
+2. 
 # glider: A template repo
 
 This template provides ...
