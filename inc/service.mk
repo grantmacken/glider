@@ -1,6 +1,10 @@
+
 .PHONY: service
-service: 
+service:
 	echo "##[ $(@) ]##"
+	which systemctl &>/dev/null || echo 'ERROR: For linux OS only: requires init systemd'; false
+	grep -q cgroup2 /proc/filesystems  || \
+		echo 'ERROR: For newer linux OS only: requires system support for cgroup2 '; false
 	loginctl enable-linger $(USER) || true
 	mkdir -p $(HOME)/.config/systemd/user
 	rm -f *.service
@@ -14,7 +18,7 @@ service:
 	systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
 	systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
 	systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
-	# systemctl --user restart pod-podx.service &>/dev/null
+	systemctl --user restart pod-podx.service &>/dev/null
 	# rm -f *.service
 	#reboot
 
