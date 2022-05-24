@@ -13,12 +13,25 @@ Xqerl is an erlang application that runs on top of the Erlang virtual machine [B
 [Erlang](https://en.wikipedia.org/wiki/Erlang_(programming_language)) applications have a reputation for being long running, fault tolerant and reliable.
 This project uses a xqerl container image, so you do not need to locally install erlang or even know much about erlang.
 
+## Project Aims
 
-## docs
+We will be setting up a **local** dockerized XQuery web application development environment.
 
-1. as a [service](docs/as-a-service.md)
+The XQuery web applications will run in a [podman](https://podman.io/) pod and consist of 2 named containers
+ 1. 'or' container: a nginx reverse proxy server based on [openresty](https://openresty.org/en/)
+ 2. 'xq' container: running the xqerl application
 
+The XQuery web applications will serve HTTPS pages and  
+can be remotely **deployed** using a single [Google Compute Engine](https://cloud.google.com/compute) instance.
+By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
+our pod will be capable capable of serving multiple dns domains from one cloud instance.
 
+## Project Documentation
+
+1. [Getting Started](docs/getting-started.md)
+
+<!--
+2. [xqerl as a service](docs/as-a-service.md)
 
 # glider: A template repo
 
@@ -35,7 +48,7 @@ make up
 make
 w3m -dump http://example.com
 ```
-
+-->
 
 TODO
 ## WIP note
@@ -45,4 +58,6 @@ Some stuff is pulled from other projects, and needs to be rewritten for this pro
 I try to take 'show not tell' approach,
 so working code will be run on 'github actions'
 and will be making some asciicast.
+
+
 

@@ -1,3 +1,11 @@
+
+.PHONY: rootless
+rootless:
+	grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || 
+	echo 'net.ipv4.ip_unprivileged_port_start=80' | 
+	sudo tee -a /etc/sysctl.conf
+	sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
+
 .PHONY: up
 up: or-up init
 	$(DASH)
