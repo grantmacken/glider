@@ -17,15 +17,34 @@ some of these XQuery functions and operators will not work as expected.
  
 **DNS_DOMAIN**: The intial dns domain in the environment file is `example.com`.
 
+##  Switching DNS Domains
+
+To switch development to a dns domain you control,
+ change the value of the `DNS_DOMAIN` in the .env file.
+ Next invoke the `make init` target.
+ The target will create some some boilerplate src files for your dns domain.
+
+Below we will use 'markup.nz' as an example domain.
+
+`make init` this generates
+ 1. data files 
+  - `src/data/markup.nz/index.md`: a markdown document
+  - `src/data/markup.nz/default_layout.xq`: a XQuery main module
+ 2. `src/code/restXQ/markup.nz.xqm`, a XQuery library module which will set the restXQ endpoints for the dns domain.
+When we run `make` which is our *build* target,
+ 1. the src *code* file will be compiled and set the restXQ endpoints
+ 2. the src *data* files will be stored as XDM items in the xqerl database.
+
 ##  DNS Resolution With /etc/hosts
 
-Our initial example site will use the classic 'example.com' domain
+Our initial example site uses the classic 'example.com' domain. 
 Since we do not own or control the 'example.com' domain,
 we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
 
-I have created a Make target `make hosts` will add an entry to the '/etc/hosts' file.
+The Make target `make hosts` will add an entry to the '/etc/hosts' file.
+The `make hosts` target uses the value of the `DNS_DOMAIN` in the .env file.
 Note: The target requires us to use super do `sudo` .
-The `make rootless` target is an alias for following shell script.
+The `make hosts` target is an alias for following shell script.
 
 ```shell
 grep -q '127.0.0.1   example.com' /etc/hosts || \

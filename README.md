@@ -45,12 +45,12 @@ our pod will be capable capable of serving multiple dns domains from one cloud i
   - A [Google Cloud Platform(https://cloud.google.com/free) account: 
   To demonstrate how to deploy to the cloud, we use the Google Cloud Platform(GCP)
   GCP has a [Free Tier](https://cloud.google.com/free) compute engine which won't cost you anything.
-  For this project, you can use a free tier compute engine instance to test the deployment then scale up as required.
+  On the free tier, you can deploy on the compute engine instance then scale up as required.
 
-  - [gcloud cli](https://cloud.google.com/sdk/gcloud): the command line cli is used to
-   - create and manage our Compute Engine virtual machine instance
-   - managing DNS managed zones and record sets. 
-   - executing Podman commands on the Compute Engine virtual machine instance
+  - [gcloud cli](https://cloud.google.com/sdk/gcloud): the command line cli is 
+used to create and manage our Compute Engine virtual machine instance, manage 
+DNS managed zones and record sets and executing Podman commands on the Compute 
+Engine virtual machine instance
 
 ## Project Documentation
 
