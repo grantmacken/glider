@@ -70,8 +70,8 @@ podx: volumes # --publish 80:80 --publish 443:443
 	echo "##[ $(@) ##]"
 	podman pod exists $(POD) || \
 		podman pod create \
-		--publish $(POD_HTTP_PORT):80 \
-	  --publish $(POD_TLS_PORT):443 \
+		--publish 80:80 \
+	  --publish 80:443 \
 		--network podman \
 		--name $(@)
 

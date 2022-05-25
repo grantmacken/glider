@@ -56,11 +56,13 @@ our pod will be capable capable of serving multiple dns domains from one cloud i
 
 1. [Getting Started](docs/getting-started.md): boot up the podman pod, 
  which will run the xqerl XQuery Application Server behind a nginx reverse proxy
-2. [As A Service](docs/as-a-service.md): turn the pod running xqerl XQuery
+2. [Runtime Environment](docs/startup-evironment.md): setting the runtime environment
+3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
  Application Server into a systemd service
 
-
-
+<!--
+4. [Example Site](docs/example-site.md): playing with the example site `example.com`
+-->
 
 <!--
 2. 
