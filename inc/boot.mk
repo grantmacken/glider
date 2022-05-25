@@ -71,7 +71,7 @@ podx: volumes # --publish 80:80 --publish 443:443
 	podman pod exists $(POD) || \
 		podman pod create \
 		--publish 80:80 \
-	  --publish 80:443 \
+	  --publish 443:443 \
 		--network podman \
 		--name $(@)
 
