@@ -71,3 +71,18 @@ With our dns domain resolving to `example.com`
 we can now make a HTTP request to 
 `http://example.com/xqerl and get the xqerl greeter response 
 from our local running pod.
+
+## On Pods, Ports and Belonging to a Network 
+
+Our xqerl container named **xq** and nginx container named *or* are in a pod named 'podx'.
+When we created our pod, we 
+   - published ports: `80:80` for HTTP requests and '443:443' for HTTPS requests
+   - set up network named **podman** that the running containers will join. 
+     Note: the podman network is the default network
+
+xqerl which listens on port 8081, is running in the internal 'podman' network
+so `http://example.com:8081` is not reachable outside the pod because port '8081'
+is not an exposed published port for the pod.
+
+Outside of the pod, to reach xqerl on the internet, all requests are via ngnix set up as a 
+[reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/)

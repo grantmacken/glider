@@ -59,6 +59,7 @@ Engine virtual machine instance
 2. [Runtime Environment](docs/startup-evironment.md): setting the runtime environment
 3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
  Application Server into a systemd service
+2. [Development Build Cycle](docs/build.md): setting the runtime environment
 
 <!--
 4. [Example Site](docs/example-site.md): playing with the example site `example.com`
