@@ -20,6 +20,7 @@ src
 ├── data   => docker xqerl-database volume
 └── proxy
     └── conf => docker proxy-conf volume
+```
 
 The source files are not directly copied into their respective volumes.
  They are *build sources* which are *piped* through a input-output build process stages,
