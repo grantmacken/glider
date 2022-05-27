@@ -42,7 +42,7 @@ our pod will be capable capable of serving multiple dns domains from one cloud i
 
   - inotify-tools: used to watch for file changes in our src directory
 
-  - A [Google Cloud Platform(https://cloud.google.com/free) account: 
+  - A [Google Cloud Platform](https://cloud.google.com/free) account: 
   To demonstrate how to deploy to the cloud, we use the Google Cloud Platform(GCP)
   GCP has a [Free Tier](https://cloud.google.com/free) compute engine which won't cost you anything.
   On the free tier, you can deploy on the compute engine instance then scale up as required.
@@ -56,11 +56,12 @@ Engine virtual machine instance
 
 1. [Getting Started](docs/getting-started.md): boot up the podman pod, 
  which will run the xqerl XQuery Application Server behind a nginx reverse proxy
-2. [Runtime Environment](docs/startup-evironment.md): setting the runtime environment
+2. [Runtime Environment](docs/runtime.md): setting the runtime environment
 3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
  Application Server into a systemd service
-4. [Container Volumes](docs/volumes.md): container volumes recap
-4. [Development Build Cycle](docs/build.md): setting the runtime environment
+4. [Container Volumes](docs/volumes.md): on pod container volumes as build artifacts
+5. [Build Cycle](docs/build.md): A local development build cycle for building web apps
+6. [xqerl-database](docs/xqerl-database.md): storing XDM data items in the xqerl database from various sources
 
 <!--
 4. [Example Site](docs/example-site.md): playing with the example site `example.com`

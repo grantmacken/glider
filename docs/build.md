@@ -35,9 +35,7 @@ The source files are not directly copied into their respective volumes.
 └── xqerl-database.tar
 ```
 
-It is important to note that is these tars that are deployed on our remote (GCE) host. 
-The key takeaway point what we build, run and serve locally in our development environment 
-will be the same as what runs and serves on the remote cloud instance
+It is important to note, that it is these tars that are deployed on our remote (GCE) host. 
 
  Initial `make` source files use 'example.com' domain.
  After experimenting, you are expected to switch to developing using your own DNS domains 
@@ -64,7 +62,4 @@ run the `make build` target when file writes occur.
 ## A Site Domain Is Always Being Served
 
 When the pod is running, the nginx proxy passes request to the xqerl XQuery application server.
-Since the pod is always running locally, when developing, if a build succeeds then you get *live web view*, of your current build.
-You do not have to stop and start your pod, to see the changes you have made.
-
-
+Since the pod is always running locally, when developing, if a build succeeds then you get *live web view*, of your current build. You do not have to stop and start your pod, to see the changes you have made.
