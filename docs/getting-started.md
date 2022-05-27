@@ -39,7 +39,6 @@ grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
 sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 ```
 
-
 ## Podman Status Commands 
 
 We can use podman commands check to see if everything booted ok.

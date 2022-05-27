@@ -63,30 +63,6 @@ Engine virtual machine instance
 5. [Build Cycle](docs/build.md): A local development build cycle for building web apps
 6. [xqerl-database](docs/xqerl-database.md): storing XDM data items in the xqerl database from various sources
 
-<!--
-4. [Example Site](docs/example-site.md): playing with the example site `example.com`
--->
-
-<!--
-2. 
-# glider: A template repo
-
-This template provides ...
-A XQuery web application development environment will enable you to locally 
-produce, check and remotely deploy muiltiple secure sites for the domains you own.
-
-This template contains ...
-some boilerplate files in the src directory 
-which are used to create an example website.
-
-```
-make up
-make
-w3m -dump http://example.com
-```
--->
-
-TODO
 ## WIP note
 
 Code is a work in progress.
