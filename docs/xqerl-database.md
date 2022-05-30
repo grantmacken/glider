@@ -1,22 +1,22 @@
 #  xqerl database 
 
-Source structured markup data like XML and JSON can be parsed and stored in 
-the xqerl database as XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
-It is worth noting that the xqerl database can store any XDM item type. 
-These XDM database items include document-nodes, maps, arrays, and even functions.
- - If the data source is not marked up then this data can be stored as unparsed text. 
- - If the data source is binary then a link item pointing to the file location can be stored in the database.
+The xqerl database volume contains hierarchical collections of 
+1. XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
+2. link items pointing to a container file location  
 
- It is worth reiterating that, structured markup data sources are parsed and loaded into 
- the xqerl database as [XDM](https://www.w3.org/TR/xpath-datamodel-31) items.
+Invoking the Make target `make` will parse and load structured markup data sources 
+from the`src/data` directory into the xqerl database as XDM items. 
+
+## Building From Data Sources
+
+Structured markup data sources are parsed and loaded into the xqerl database as [XDM](https://www.w3.org/TR/xpath-datamodel-31) items
+These XDM database items include document-nodes, maps, arrays, and even functions.
 
  - a XML text when parsed is stored as an `instance of document-node()`
  - JSON object when parsed stored as an `instance of map(*)`
  - JSON array when parsed stored as an `instance of array(*)`
  - CSV text when parsed stored as an `instance of array(*)`
  - XQuery main module function:  when compiled stored as an `instance of function(*)`
-
-The URI of XDM items stored in the db can be retrieved by the XQuery function`fn:uri-collection()`
 
 When items are stored as XDM items into the xqerl database the query power of XQuery 3.1 is amplified. 
 XQuery was originally designed to work with structured data in the context of a XML database. With XQuery 3.1 the xPath 
@@ -51,6 +51,36 @@ src
   │       └── index.md       => db identifier: http://example.com/index
 ```
 
+## unparsed text
+
+TODO
+
+<!--
+ - If the data source is not marked up then this data can be stored as unparsed text. 
+ - If the data source is binary then a link item pointing to the file location can be stored in the database.
+-->
+
+## link items
+
+TODO
+
+## Collection Lists and Item Retieval
+
+The XQuery expression to get a list of URI in the  'example.com' database
+
+```
+'http://example.com' => uri-collection() => string-join('&#10;')
+```
+
+This expression needs to run in the context of the running container instance
+
+```
+ podman exec xq xqerl eval "xqerl:run(\"'http://example.com' => uri-collection() => string-join('&#10;') \")"
+```
+
+
+<!--
+
 Note: The `src/data/{DNS_DOMAIN}` directory structure is just a build process convenience. 
 There other ways of getting data into the database and you don't have to follow 
 the 'no extension' convention.
@@ -62,7 +92,7 @@ Note: The database db identifier does not represent a web resource but a xqerl d
 A URI can be broken down into is constituent parts, a scheme, an authority and a path
 A web resources *authority* is a dns domain or IP address.
 For this project our db *authority* in the URI is always just a 'dns domain'.
-
+-->
 <!--
 ## Listing Database Items 
 
@@ -71,17 +101,6 @@ data is stored under our development dns domain.
 
 ### Using A XQuery Expression To List Items
 
-A XQuery expression to get a list of URI in the  'example.com' database
-can use the builtin XQuery `uri-collection()` function
-
-```
-'http://example.com' => uri-collection() => string-join('&#10;')
-```
-
-This expression needs to run in the context of the running container instance
-
-```
- podman exec xq xqerl eval "xqerl:run(\"'http://example.com' => uri-collection() => string-join('&#10;') \")"
  ```
 
 

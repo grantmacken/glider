@@ -1,14 +1,16 @@
 #  Container Volumes
 
-In our [podman pod]((https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#podman_pods__what_you_need_to_know)
+In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#podman_pods__what_you_need_to_know)
  we have two running containers
 
 1. **xq**: this is a running instance of the xqerl XQuery application server
 2. **or** this is the running nginx instance which is based on openresty
-   At the moment 'or' with our 'example.com' test site it acting as a reverse proxy for xqerl.
+   At the moment 'or' with our 'example.com' test site it is a reverse proxy for xqerl.
    Later we will set it up to serve our own dns domains nginx will be the
     - proxy TLS termination point
     - proxy cache server
+
+## Container Volume Mounts
 
 Our running containers have volume mounts:
 
@@ -28,8 +30,7 @@ The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
 Xqerl XQuery web app development with a local running pod instance is a matter of getting stuff into the attached volumes.
  Volumes can be seen as deployable artifacts. Deployment is a matter of running a remote instance of our pod with attached volumes.
  To deploy we can export local volumes and export import these volumes on a remote hosts.
- This means, what we run and serve locally in our development environment can the same as what runs and serves on a remote cloud instance
-
+ This means, what we run and serve locally in our development environment can be the same as what runs and serves on a remote cloud instance
 
 
 

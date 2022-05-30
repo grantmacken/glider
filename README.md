@@ -60,8 +60,12 @@ Engine virtual machine instance
 3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
  Application Server into a systemd service
 4. [Container Volumes](docs/volumes.md): on pod container volumes as build artifacts
-5. [Build Cycle](docs/build.md): A local development build cycle for building web apps
-6. [xqerl-database](docs/xqerl-database.md): storing XDM data items in the xqerl database from various sources
+5. [Build Cycle](docs/build.md): A local development build cycle for building xqerl XQuery Application Server apps
+6. [xqerl-database](docs/xqerl-database.md): storing XDM data items in the xqerl database 
+7. [xqerl-code](docs/xqerl-code.md): compiling and registering XQuery library modules
+7. [static assets](docs/static-assets.md): preprocessing and storing an static assets
+7. [proxy conf](docs/proxy.md): nginx reverse proxy configuration, rewrites and locations
+
 
 ## WIP note
 

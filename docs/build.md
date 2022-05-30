@@ -1,5 +1,5 @@
 
-##  The Development Build Cycle
+#  The Development Build Cycle
 <!--
 Although the end goal is for us to have a websites running under our own domains, 
 the glider project generates some base boilerplate files for the 'example.com' domain 
@@ -39,28 +39,39 @@ The source files are not directly copied into their respective volumes.
 It is important to note, that it is these tars that are deployed on our remote (GCE) host. 
 
  Initial `make` source files use 'example.com' domain.
- After experimenting, you are expected to switch to developing using your own DNS domains 
+ After experimenting, you are expected to switch to developing using your own domains 
 and using HTTPS. To do this letsencrypt certs are obtained independently of a remote running site,
 and stored in a remote 'letsencrypt' volume. This volume is imported into the local development envronment.
 After a couple of changes to the nginx configuration, the locally developed and remote sites will be serving only HTTPS, 
 and HTTP port 80 requests will be routed to the secure HTTPS port 443.
 
-## Make Targets
+## The Make Build Target
 
-When the pod is running, you can start editing the source files in the src dir.
-After editing a source file you can build by running `make`
-The default Make target is `make build` so `make` will run `make build`
+When the pod is running, after editing a source file you can build by running `make`
+The default Make target is `make build` so `make` will run `make build`.
 
 When you invoke a subsequent `make`, only edited files will be built.
 
-After the first `make` run you can set a watch target.
-In another terminal window, cd into this repo directory 
-and run `make watch`
+## The Make Watch Target
 
-This will watch for file writes in the src dir and  
-run the `make build` target when file writes occur.
+After the first `make` run you can set a watch target. In another terminal window, cd into this repo directory 
+ and run `make watch`. This will watch for file writes in the src dir and run the `make build` target when file writes occur.
 
 ## A Site Domain Is Always Being Served
 
-When the pod is running, the nginx proxy passes request to the xqerl XQuery application server.
-Since the pod is always running locally, when developing, if a build succeeds then you get *live web view*, of your current build. You do not have to stop and start your pod, to see the changes you have made.
+When developing by editing and building from source files the pod should always be running. 
+You do not have to stop and start your pod, after a build.
+If a build succeeds, it means the changes have already been implemented on the running pod instance.
+
+If you are building using the dns domain 'example.com' then the 
+pod will serving your app at 'http://example.com'.
+
+To get as they happen live view of your changes in the browser, 
+ you can use something like [tab-reloader](https://github.com/james-fray/tab-reloader) which is 
+ available for most common browsers.
+
+
+
+
+
+
