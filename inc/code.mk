@@ -25,7 +25,7 @@ code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild)) ## 
 .PHONY: code-clean
 code-clean: # remove: `make code` build artifacts
 	echo '##[ $@ ]##'
-	rm -f  $(libraryModulesBuild)  $(mainModulesBuild) _deploy/xqerl-code.tar
+	rm -fv  $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
 
 .PHONY: code-volume-export
 code-volume-export:
@@ -59,9 +59,17 @@ _build/code/%.xqm.txt: src/code/%.xqm
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if podman ps -a | grep -q $(XQ)
 	then
-	echo '##[  $<  ]##'
-	$(call compile,$<,$@)
-	grep -q ':Info: compiled ok!' $@
+	echo '##[ $< ]##'
+	podman cp $< xq:/home/
+	podman exec xq xqerl eval '
+	Res = try
+	 Mod = xqerl:compile("/home/$(notdir $<)")
+	 of
+		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
+	 catch
+	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
+	 end.' | tee $@
+	grep -q :Info: $@
 	sleep 1
 	fi
 
@@ -83,14 +91,13 @@ _build/code/%.xq.txt: src/code/%.xq
 	then
 	podman cp $< xq:/home/
 	podman exec xq xqerl eval '
-	case xqerl:compile("/home/$(notdir $<)") of
-		Err when is_tuple(Err), element(1, Err) == xqError -> 
-			["$<:",integer_to_list(element(2,element(5,Err))),":Error: ",binary_to_list(element(3,Err))];
-		Info when is_atom(Info) -> 
-			["$(<):1:Info: compiled ok! "];
-			_ -> 
-			io:format(["$<:1:Error: unknown error"])
-	end.' | jq -r '.[]' | tee $@
+	Res = try
+	 Mod = xqerl:compile("/home/$(notdir $<)")
+	 of
+		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
+	 catch
+	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
+	 end.' | tee $@
 	grep -q :Info: $@
 	fi
 
