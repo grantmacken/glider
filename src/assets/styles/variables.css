@@ -1,0 +1,71 @@
+:root { /*https://htmlcolors.com/hex-to-hsl   https://www.color-name.com /*/
+    --dark1: hsla(231, 26%, 21%, 1); /* #282a36  Gunmetal  code backgound */
+    --dark2: hsla(231, 26%, 21%, 1); /* #363428  Cola     complementary code background */
+    --dark3: hsla(0, 2%, 38%, 1); /*    #615F5F  Granite Gray */
+    --dark4: hsla(359, 0%, 41%, 1); /*  #696969  Dim Gray*/
+    --dark5: hsla(180, 1%, 63%, 1); /*  #A0A1A1  Spanish Gray */
+
+   --light1: hsla(219, 28%, 88%, 1);   /* #D7D5C9  Timberwolf inverse of Gunmetal */
+   --light2: hsla(201, 203%, 215%, 1); /* #C9CBD7  American Silver */
+   --light3: hsla(240, 0%, 98%, 1);    /* #F7F7F4  Cultured*/
+   --light4: hsla(359, 0%, 99%, 1);  /*   #FDFDFD  Lotion */
+
+    --blue1: hsla(179, 25%, 65%, 1); /* #8FBCBB */
+    --blue2: hsla(193, 43%, 67%, 1); /* #88C0D0 */
+    --blue3: hsla(210, 34%, 63%, 1); /* #81A1C1 */
+    --blue4: hsla(213, 32%, 52%, 1); /* #5e81ac */
+      --red: hsla(354, 42%, 56%, 1); /* #bf616a */
+   --orange: hsla(14, 51%, 63%, 1);  /* #d08770 */
+   --yellow: hsla(40, 71%, 73%, 1);  /* #EBCB8B */
+    --green: hsla(86, 54%, 51%, 1);/*   #8cc63f */
+   --purple: hsla(311, 20%, 63%, 1); /* #b48ead */
+
+  --size-300: clamp(0.7rem, 0.66rem + 0.2vw, 0.8rem);
+  --size-400: clamp(0.88rem, 0.83rem + 0.24vw, 1rem);
+  --size-500: clamp(1.09rem, 1rem + 0.47vw, 1.33rem);
+  --size-600: clamp(1.37rem, 1.21rem + 0.8vw, 1.78rem);
+  --size-700: clamp(1.71rem, 1.45rem + 1.29vw, 2.37rem);
+  --size-800: clamp(2.14rem, 1.74rem + 1.99vw, 3.16rem);
+  --size-900: clamp(2.67rem, 2.07rem + 3vw, 4.21rem);
+  --size-1000: clamp(3.34rem, 2.45rem + 4.43vw, 5.61rem);
+
+   --base-background: var(--light3);
+   --base-color: var(--dark4);
+   --base-font-family: 'IBM Plex Serif', 'Georgia', Times, serif;
+   --base-font-size: size 700;
+   --base-font-weight: 400;
+   --base-line-height: 1.5;
+   --flow-spacer: 1rem;
+
+  /* BANNER */
+  --banner-color:  var(--light2);
+  --banner-background: var(--light2);
+
+  /* HEADINGS */
+  --heading-font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  --heading-color: var(--green);
+  --heading-weight: 700;
+  --heading-margin: 0 0 1rem;
+
+  /* CODE BLOCK HIGHLIGHTING */
+  --code-font: 'IBM Plex Mono', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', Courier, monospace;
+
+
+  /* QUOTES */
+  --quote-backgound: var(--light2);
+  --quote-indicator: 5px solid var(--blue1);
+
+  /* LISTS */
+  --list-font: 'IBM Plex Sans Condensed', 'Helvetica Neue', Arial, sans-serif;
+
+ /* TABLES */
+ --table-row-indicator: 1px solid #f1f1f1 ;
+
+  /* NAVIGATION */
+  --nav-background: var(--light2);
+  /* NAVIGATION HYPERLINKS */
+  --link-color: var(--blue4);
+  --link-highlight: var(--green);
+
+}
+

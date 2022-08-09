@@ -1,23 +1,3 @@
-# Getting Started
-
-1. clone this repo and cd into the cloned dir
-2. enable rootless to operate on port 80 and above
-3. bring the pod up with two running containers
- - 'or' container: nginx as a reverse proxy
- - 'xq' container: the xqerl application
-5. view localhost site 
-
-```
-gh repo clone grantmacken/glider
-cd glider
-make rootless
-make up
-```
-
-If you see the 'You are now flying xqerl' 
-you know the pod is running and in the pod nginx is acting as a 
-reverse proxy for the xqerl XQuery application server.
-
 
 ## On Rootlessness
 
@@ -43,21 +23,3 @@ grep -q 'net.ipv4.ip_unprivileged_port_start=80' /etc/sysctl.conf || \
 	sudo tee -a /etc/sysctl.conf
 sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 ```
-
-## Podman Status Commands 
-
-We can use podman commands check to see if everything booted ok.
-
-```
-podman ps --all --pod 
-# check the xqerl container log 'xq'
-podman logs xq
-# display the running processes of the container xq
-podman top xq
-# see what host resource are being used in our pod
-podman stats --no-stream
-# view the greater in the browser
-firefox http://localhost/xqerl
-```
-
-

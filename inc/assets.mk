@@ -6,12 +6,12 @@
 ## pick icons 
 ## <img src="/assets/icons/bootstrap.svg" alt="Bootstrap" width="32" height="32">
 ###########################
-stylesBuild := $(patsubst src/%.css,_build/%.css,$(wildcard src/assets/styles/*.css))
-fontsBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/fonts/*))
-castsBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/casts/*.cast))
-scriptsBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/scripts/*.js))
-iconsBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/icons/*.svg))
-imagesBuild := $(patsubst src/%,_build/%,$(wildcard src/assets/images/*.png))
+stylesBuild := $(patsubst src/%.css,_build/%.css,$(call rwildcard, src/assets/styles, *.css))
+fontsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/fonts, *.woff2))
+castsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/casts, *.cast))
+scriptsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/scripts, *.js)) $(patsubst src/%,_build/%,$(call rwildcard, src/assets/scripts, *.js.gz))
+iconsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/icons, *.svg))
+imagesBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/images, *.png))
 
 .PHONY: assets assets-deploy
 assets: _deploy/static-assets.tar ## static-assets: pre-process and store on container filesystem
@@ -100,19 +100,10 @@ _build/assets/scripts/%: src/assets/scripts/%
 .PHONY: casts 
 casts: $(castsBuild)
 
-
-
-
-
 .PHONY: casts-list
 casts-list:
 	podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
 		-c 'ls priv/static/assets/casts'
-
-.PHONY: fonts-list
-fonts-list:
-	podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
-		-c 'ls priv/static/assets/fonts'
 
 _build/assets/casts/%: src/assets/casts/%
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -125,6 +116,11 @@ _build/assets/casts/%: src/assets/casts/%
 .PHONY: fonts
 fonts: $(fontsBuild)
 
+.PHONY: fonts-list
+fonts-list:
+	podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
+		-c 'ls priv/static/assets/fonts'
+
 .PHONY: fonts-clean
 fonts-clean:
 	rm -v $(fontsBuild) || true
@@ -132,18 +128,11 @@ fonts-clean:
 		-c 'rm priv/static/assets/fonts/*' || true
 
 _build/assets/fonts/%: src/assets/fonts/%
-	echo "##[ $(patsubst src/%,priv/static/%,$<) ]##"
-	cat $< |
-	podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
-		-c 'cat - > /home/$(notdir $<) \
-		&& mkdir -v -p $(patsubst src/%,priv/static/%,$(dir $<)) \
-		&& mv /home/$(notdir $<) $(patsubst src/%,priv/static/%,$(dir $<))  \
-		&& ls $(patsubst src/%,priv/static/%,$<)' > $@
-	sleep .5
-
-xxxx:
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	podman run --rm --mount $(MountAssets) --entrypoint "sh" $(XQ) -c 'mkdir -p  $(patsubst src/%,priv/static/%,$(dir $<))'
+	echo '##[  $(patsubst src/%,%,$<) ]##'
+	echo "##[ $(patsubst src/%,priv/static/%,$<) ]##"
+	podman run --rm --mount $(MountAssets) --entrypoint "sh" $(XQ) -c 'mkdir -p $(patsubst src/%,priv/static/%,$(dir $<))'
 	cat $< | podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
 		-c 'cat - > $(patsubst src/%,priv/static/%,$<) && ls $(patsubst src/%,priv/static/%,$<)' | \
 		tee $@
+

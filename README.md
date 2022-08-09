@@ -21,10 +21,12 @@ The XQuery web applications will run in a [podman](https://podman.io/) pod and c
  1. 'or' container: a nginx reverse proxy server based on [openresty](https://openresty.org/en/)
  2. 'xq' container: running the xqerl application
 
+<!--
 The XQuery web applications will serve HTTPS pages and  
 can be remotely **deployed** using a single [Google Compute Engine](https://cloud.google.com/compute) instance.
 By using [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication), 
 our pod will be capable capable of serving multiple dns domains from one cloud instance.
+-->
 
 ## Requirements
 
@@ -40,7 +42,7 @@ our pod will be capable capable of serving multiple dns domains from one cloud i
   > Makefiles are machine-readable documentation that make your workflow reproducible
   cited from [Why Use Make](https://bost.ocks.org/mike/make/)
 
-  - inotify-tools: used to watch for file changes in our src directory
+  <!--
 
   - A [Google Cloud Platform](https://cloud.google.com/free) account: 
   To demonstrate how to deploy to the cloud, we use the Google Cloud Platform(GCP)
@@ -52,19 +54,68 @@ used to create and manage our Compute Engine virtual machine instance, manage
 DNS managed zones and record sets and executing Podman commands on the Compute 
 Engine virtual machine instance
 
-## Project Documentation
+-->
+
+## Getting Started
+
+1. clone this repo and cd into the cloned dir
+2. [enable rootless](./docs/on_rootlessness.md) to operate on port 80 and above
+3. bring the [podman pod](https://docs.podman.io/en/latest/markdown/podman-pod.1.html) up with two running containers
+ 1. 'or' container: nginx as a reverse proxy
+ 2. 'xq' container: the xqerl application
+
+```shell
+gh repo clone grantmacken/glider
+cd glider
+make rootless
+make up
+```
+
+If you see the 'You are now flying xqerl' 
+you know the pod is running and in the pod nginx is acting as a 
+reverse proxy for the xqerl XQuery application server.
+
+## Podman Status Commands 
+
+We can use podman commands check to see if everything booted ok.
+
+```
+podman ps --all --pod 
+# check the xqerl container log 'xq'
+podman logs xq
+# display the running processes of the container xq
+podman top xq
+# see what host resource are being used in our pod
+podman stats --no-stream
+```
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
 
 1. [Getting Started](docs/getting-started.md): boot up the podman pod, 
  which will run the xqerl XQuery Application Server behind a nginx reverse proxy
 2. [Runtime Environment](docs/runtime.md): setting the runtime environment
 3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
  Application Server into a systemd service
-4. [Container Volumes](docs/volumes.md): on pod container volumes as build artifacts
-5. [Build Cycle](docs/build.md): A local development build cycle for building xqerl XQuery Application Server apps
-6. [xqerl-database](docs/xqerl-database.md): storing XDM data items in the xqerl database 
-7. [xqerl-code](docs/xqerl-code.md): compiling and registering XQuery library modules
-7. [static assets](docs/static-assets.md): preprocessing and storing an static assets
-7. [proxy conf](docs/proxy.md): nginx reverse proxy configuration, rewrites and locations
+
+4. [Container Volumes](docs/volumes.md): pod container volumes as build artifacts
+5. [Build Cycle](docs/build.md): local development build cycle for building xqerl XQuery Application Server apps
+6. [Xqerl Database](docs/xqerl-database.md): storing XDM data items in the xqerl database 
+7. [Xqerl Code](docs/xqerl-code.md): compiling and registering XQuery library modules
+7. [Static Assets](docs/static-assets.md): preprocessing and storing static assets
+7. [Proxy Conf](docs/proxy.md): nginx reverse proxy configuration, rewrites and locations
+
+-->
 
 
 ## WIP note

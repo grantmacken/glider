@@ -43,7 +43,8 @@ help: ## show this help
 	sort |
 	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-include inc/*
+include inc/def/*.def
+include inc/*.mk
 
 .PHONY: build
 build: code data assets confs ## default target
@@ -84,40 +85,3 @@ hosts-remove:
 	sudo sed -i '/127.0.0.1   $(DNS_DOMAIN)/d' /etc/hosts
 	cat  /etc/hosts
 
-.PHONY: init
-init: data-init code-init
-
-data-init: src/data/$(DNS_DOMAIN)/index.md src/data/$(DNS_DOMAIN)/default_layout.xq
-code-init: src/code/restXQ/$(DNS_DOMAIN).xqm
-
-.PHONY: init-clean
-init-clean:  data-init-clean code-init-clean
-
-code-init-clean: 
-	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm || true
-
-data-init-clean: 
-	echo '##[ $@ ]##'
-	rm -v src/data/$(DNS_DOMAIN)/index.md || true
-	rm -v src/data/$(DNS_DOMAIN)/default_layout.xq || true
-
-src/code/restXQ/$(DNS_DOMAIN).xqm: export restXQ_tpl:=$(restXQ_tpl)
-src/code/restXQ/$(DNS_DOMAIN).xqm:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $@) ]##'
-	echo "$${restXQ_tpl}"  > $@
-	ls -l $@
-
-src/data/$(DNS_DOMAIN)/index.md: export index_md:=$(index_md)
-src/data/$(DNS_DOMAIN)/index.md:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $@) ]##'
-	echo "$${index_md}"  > $@
-	ls -l $@
-
-src/data/$(DNS_DOMAIN)/default_layout.xq: export default_layout:=$(default_layout)
-src/data/$(DNS_DOMAIN)/default_layout.xq:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $@) ]##'
-	echo "$${default_layout}"  > $@
-	ls -l $@

@@ -8,6 +8,6 @@ case xqerl:compile("/home/$(notdir $1)") of
 		["$1:1:Info: compiled ok! "];
 		_ ->
 		["$1:1:Error: unknown error"]
-		end.' | jq -r '.[]' | tee $2
+		end.' | tee $2
 endef
 

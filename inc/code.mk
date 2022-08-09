@@ -4,11 +4,12 @@
 # Exept for restXQ modules,  modules are in a flat directory structure: src/code/{name}.{xq or xqm}
 # xq for main modules 
 # xqm for library modules
-# restXQ modules are the src/restXQ dir
+# restXQ modules are the src/routes directory
 # The naming convention is to name the restXQ modules after dns domains
-# The restXQ module for a domain will define website dispatch routes
+# The restXQ module for a domain will define website dispatch routes for the domain
+# 
 # ----------------------------------------
-libraryModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xqm) $(wildcard src/code/restXQ/*.xqm)) 
+libraryModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xqm) $(wildcard src/code/routes/*.xqm)) 
 mainModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/*.xq))
 # restXQBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/restXQ/*.xqm)) 
 # xquery constructors that can be stored as XDM items the xqerl db

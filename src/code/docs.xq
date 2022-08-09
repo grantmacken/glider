@@ -2,9 +2,6 @@ import module namespace cmark = "http://xq/#cm_dispatch";
 declare variable $src external;
 (: documentation generator :)
 try {
-
-
-
 let $dbCollection := function( $uri ){
   let $dbPathTokens := $uri => tokenize('/')
   let $dbPathTokensCount := $dbPathTokens => count()
@@ -26,14 +23,14 @@ let $dbDomain := function ( $uri ){
   $dbPathTokens => subsequence(3,1)
 }
 
-let $getContent := function( $map as map(*) ) as map(*){
-   let $xDoc :=  $map?document
+let $getContent := function( $m as map(*) ) as map(*){
+   let $xDoc :=  $m?document
    let $key := 'content'
    let $value := $xDoc => cmark:dispatch()
    return 
    if ( $value instance of item() ) 
-   then map:put($map, $key, $value)
-   else map:put($map,'problem','unable to parse content')
+   then map:put($m, $key, $value)
+   else map:put($m,'problem','unable to parse content')
 }
 
 let $getFrontMatter := function( $map as map(*)) as map(*){

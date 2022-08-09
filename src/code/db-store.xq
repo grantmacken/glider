@@ -8,6 +8,6 @@ return
  if ( $func instance of function(*) )
  then ( true(),db:put( $func, "`{$uri}`" ))
  else false()
-} catch * { false() }
+} catch * { false()}
 ]`` => serialize(map{"method": "text"})
-} catch * { false() }
+} catch * {  false() }

@@ -11,7 +11,7 @@ xqList  :=  $(call rwildcard,src/data,*.xq)
 
 mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
 jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
-xmlBuild := $(patsubst src/%,_build/%.headers,$(xmlList))
+xmlBuild := $(patsubst src/%,_build/%,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
@@ -137,23 +137,42 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
 
-_build/data/%.xml.headers: src/data/%.xml
+_build/data/%.xml: src/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(basename $(notdir $<)) ]##'
-	$(DASH)
-	if grep -qoP 'HTTP/1.1 201 Created' $@
+	echo '##[ $(*) ]##'
+	if podman run --rm --pod $(POD) $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/xml" \
+		http://localhost:8081/db/$(*) | grep -q '200'
 	then
-	echo " update:  $(shell grep -oP 'location: \K([^\s]+)' $@)"
-	bin/db-update $< | grep -qoP '^HTTP/1.1 204 No Content'
-	touch $@
-	curl --silent --show-error --connect-timeout 1 --max-time 2 \
-    --header "Accept: application/xml" \
-		$(shell grep -oP 'location: \K([^\s]+)' $@)
-	echo 'updated: $(shell grep -oP 'location: \K(.+)' $@)'
+	echo "xqerl database: update XML from source"
+	cat $< |
+	podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+    -X PUT \
+		--header "Content-Type: application/xml" \
+		--data-binary @- \
+		http://localhost:8081/db/$(*) | grep -q '204'
+	cp $< $@
 	else
-	bin/db-create $< | tee $@
-	grep -qoP 'HTTP/1.1 201 Created' $@
+	echo "xqerl database: new XML from source"
+	echo 'collection: http://$(dir $(*))'
+	echo 'resource: $(basename $(notdir $<))'
+	echo && $(DASH)
+	cat $< |
+	podman run --rm  --pod $(POD) --interactive $(CURL) \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		--header "Content-Type: application/xml" \
+		--header "Slug: $(basename $(notdir $<))" \
+		--data-binary @- \
+		--output /dev/null \
+		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
+	cp $< $@
 	fi
+	$(DASH)
 
 _build/data/%.xq: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -207,6 +226,6 @@ _deploy/data/%.xq: _build/data/%.xq
 	echo ' - resource:    $(basename $(notdir $<))'
 	cat $< | $(Gcmd) "cat - > $(notdir $<) \
 		&& podman cp $(notdir $<) xq:/home \
-	  && podman exec xq xqerl eval 'xqerl:run(xqerl:compile(\"/home/$(notdir $<)\")).'"
+		&& podman exec xq xqerl eval 'xqerl:run(xqerl:compile(\"/home/$(notdir $<)\")).'"
 	#$(Gcmd) 'ls -l $(notdir $<)'
 
