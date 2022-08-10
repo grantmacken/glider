@@ -106,7 +106,7 @@ some of these XQuery functions and operators will not work as expected.
 **DNS_DOMAIN**: The intial domain in the environment file is `localhost`.
 
 The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md)
-so you can work with domain in the development environment
+so you can work with a specific DNS domain in the development environment e.g. `example.com`
 
 ## The Podx Pod
 
@@ -162,7 +162,7 @@ Our local development build cycle will consists of:
 
 A tree view of the src folder reflects what gets stored into the respective container volumes.
 
-```
+```shell
 src
 ├── assets => docker static-assets volume
 ├── code   => docker xqerl-code volume
