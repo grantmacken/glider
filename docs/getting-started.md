@@ -18,7 +18,6 @@ If you see the 'You are now flying xqerl'
 you know the pod is running and in the pod nginx is acting as a 
 reverse proxy for the xqerl XQuery application server.
 
-
 ## On Rootlessness
 
 In both our local development environment, and on our remote internet facing cloud instance, 
@@ -59,5 +58,26 @@ podman stats --no-stream
 # view the greater in the browser
 firefox http://localhost/xqerl
 ```
+
+## Up and Down With the .env file
+
+We bring the pod up by running `make up` 
+and conversely by running `make down` we stop the the running containers.
+
+When running `make up` **make** will read from the `.env` file where it will pick up
+container *runtime* variables.
+
+ **TIMEZONE**: XQuery has rich set of functions and operators for 
+dates, times and durations. This needs to be adjusted to your timezone, otherwise 
+some of these XQuery functions and operators will not work as expected.
+
+**Image Versions**:  These can be adjusted to the latest image versions
+ 
+**DNS_DOMAIN**: The intial dns domain in the environment file is `example.com`.
+
+
+
+
+
 
 

@@ -59,9 +59,9 @@ Engine virtual machine instance
 ## Getting Started
 
 1. clone this repo and cd into the cloned dir
-2. [enable rootless](./docs/on_rootlessness.md) to operate on port 80 and above
+2. [enable rootless](./docs/on_rootlessness.md) in order to sever on port 80 and above
 3. bring the [podman pod](https://docs.podman.io/en/latest/markdown/podman-pod.1.html) up with two running containers
- 1. 'or' container: nginx as a reverse proxy
+ 1. 'or' container: nginx as a [reverse proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy)
  2. 'xq' container: the xqerl application
 
 ```shell
@@ -79,7 +79,7 @@ reverse proxy for the xqerl XQuery application server.
 
 We can use podman commands check to see if everything booted ok.
 
-```
+```shell
 podman ps --all --pod 
 # check the xqerl container log 'xq'
 podman logs xq
@@ -88,6 +88,25 @@ podman top xq
 # see what host resource are being used in our pod
 podman stats --no-stream
 ```
+
+## Up and Down With the .env file
+
+We bring the pod up by running `make up` 
+and conversely by running `make down` we stop the the running containers.
+
+When running `make up` **make** will read from the `.env` file where it will pick up
+container *runtime* variables.
+
+ **TIMEZONE**: XQuery has rich set of functions and operators for 
+dates, times and durations. This needs to be adjusted to your timezone, otherwise 
+some of these XQuery functions and operators will not work as expected.
+
+**Image Versions**:  These can be adjusted to the latest image versions
+ 
+**DNS_DOMAIN**: The intial domain in the environment file is `localhost`.
+
+The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md)
+in the development environment to a website domain you control.
 
 
 
