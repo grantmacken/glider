@@ -95,46 +95,82 @@ We bring the pod up by running `make up`
 and conversely by running `make down` we stop the the running containers.
 
 When running `make up` **make** will read from the `.env` file where it will pick up
-container *runtime* variables.
+container *runtime* variables. The .env file contains these keys.
 
  **TIMEZONE**: XQuery has rich set of functions and operators for 
 dates, times and durations. This needs to be adjusted to your timezone, otherwise 
 some of these XQuery functions and operators will not work as expected.
 
-**Image Versions**:  These can be adjusted to the latest image versions
+**Image Versions**:  These can be adjusted to the latest container image versions
  
 **DNS_DOMAIN**: The intial domain in the environment file is `localhost`.
 
 The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md)
-in the development environment to a website domain you control.
+so you can work with domain in the development environment
+
+## The Podx Pod
+
+In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#podman_pods__what_you_need_to_know) which we have named `podx`,  we have two running containers
+
+1. **xq**: this is a running instance of the xqerl XQuery application server
+2. **or** this is the running nginx instance which is based on openresty
+   and is acting as a reverse proxy for xqerl.
+   Later we will set up the reverse proxy to serve our own dns domains. 
+   With our own dns domains nginx will also be the
+    - proxy TLS termination point
+    - proxy cache server
 
 
+### Runtime Container Volume Mounts
+
+The podx pod has the following volume mounts:
+
+**xq**: has these volume mounts
+ - **xqerl-database** volume: holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
+ - **xqerl-code** volume: holds user main and library XQuery modules which are compiled into beam files
+ - **static-assets** volume: holds binary and unparsed text files in the container filesystem. 
+
+ **or**: has these volume mounts
+ - **proxy-conf** volume: holds nginx configuration files
+ - **letsencrypt** volume: will hold TLS certs from letsencrypt
+
+The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
+ The xqerl-code and xqerl-database are volumes which allow us to persist xqerl **application state** 
+ across host reboots or stoping and and restarting the pod.
+
+### The Central Importance of Container Volumes
+
+After we have developed a web app based on our dns domain, 
+deployment is a matter of running a remote instance of our pod with attached volumes.
+ 
 
 
+ Volumes can be seen as deployable artifacts. 
+ To deploy we can export local volumes and export import these volumes on a remote hosts.
+ This means, what we run and serve locally in our development environment 
+ can be the same as what runs and serves on a remote cloud instance
 
+The development of a web app with a local running pod instance,
+ is a matter of getting stuff into the attached volumes.
 
+##  The Development Build Cycle
 
+Our local development build cycle will consists of:
+ 1. **editing** source files located in the src directory
+ 2. **building** by running `make` which stores build-target results into appropiate container volumes
+ 3. **checking** the build which is site reachable at your development dns domain e.g. http://example.com
 
+A tree view of the src folder reflects what gets stored into the respective container volumes.
 
+```
+src
+├── assets => docker static-assets volume
+├── code   => docker xqerl-code volume
+├── data   => docker xqerl-database volume
+└── proxy
+    └── conf => docker proxy-conf volume
+```
 
-
-
-<!--
-
-1. [Getting Started](docs/getting-started.md): boot up the podman pod, 
- which will run the xqerl XQuery Application Server behind a nginx reverse proxy
-2. [Runtime Environment](docs/runtime.md): setting the runtime environment
-3. [As A Service](docs/as-a-service.md): turn the pod running the xqerl XQuery
- Application Server into a systemd service
-
-4. [Container Volumes](docs/volumes.md): pod container volumes as build artifacts
-5. [Build Cycle](docs/build.md): local development build cycle for building xqerl XQuery Application Server apps
-6. [Xqerl Database](docs/xqerl-database.md): storing XDM data items in the xqerl database 
-7. [Xqerl Code](docs/xqerl-code.md): compiling and registering XQuery library modules
-7. [Static Assets](docs/static-assets.md): preprocessing and storing static assets
-7. [Proxy Conf](docs/proxy.md): nginx reverse proxy configuration, rewrites and locations
-
--->
 
 
 ## WIP note
