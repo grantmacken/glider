@@ -13,7 +13,7 @@ confs: _deploy/proxy-conf.tar ## proxy-conf: check and store src files in contai
 
 confs-deploy: #  
 	@echo '## $@ ##'
-	cat _deploy/static-assets.tar |
+	cat _deploy/proxy-conf.tar |
 	$(Gcmd) ' cat - | podman volume import proxy-conf - '
 
 .PHONY: confs-clean

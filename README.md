@@ -112,8 +112,8 @@ so you can work with a specific DNS domain in the development environment e.g. `
 
 In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#podman_pods__what_you_need_to_know) which we have named `podx`,  we have two running containers
 
-1. **xq**: this is a running instance of the xqerl XQuery application server
-2. **or** this is the running nginx instance which is based on openresty
+1. **xq:** this is a running instance of the xqerl XQuery application server
+2. **or:** this is the running nginx instance which is based on openresty
    and is acting as a reverse proxy for xqerl.
    Later we will set up the reverse proxy to serve our own dns domains. 
    With our own dns domains nginx will also be the
@@ -171,15 +171,52 @@ src
     └── conf => docker proxy-conf volume
 ```
 
+The source files are not directly copied into their respective volumes.
+ They are *build sources* which are *piped* through a input-output build process stages,
+ and the end result then stored into a container volume.  
+ To trigger the build process we just run the default make target `make`.
+ The **build artifacts** are the docker volumes exported as tar files. 
+ These build result artifacts tars are in the `_deploy` directory.
+
+```shell
+├── proxy-conf.tar
+├── static-assets.tar
+├── xqerl-code.tar
+└── xqerl-database.tar
+```
+
+### The Make Build Target
+
+When the pod is running, after editing a source file you can build by running `make`
+The default Make target is `make build` so `make` will run `make build`.
+
+When you invoke a subsequent `make`, only edited files will be built.
+
+### Build Sub Targets
+
+There are build targets for each container volume. 
+
+ - `make code`: compiles XQuery main and library modules into beam files, registers library modules and sets web app routes from restXQ libraries.
+  XQuery code from `src/code` goes into `xqerl-code` volume
+ - `make data`:  data pipeline preprocessing (munging|wrangling) to create XDM items for xqerl database. 
+ Data from `src/data` goes into the `xqerl-database` volume 
+ - `make assets`: preprocessing asset pipeline to store binary and unparsed text files. Assets from `src/assets` goes into the `static-assets` volume
+`static-assets` volume
+    - `make confs` nginx configuration files`src/proxy/cong` goes into the `proxy-conf` volume 
+ 
+### A Site Domain Is Always Being Served
+
+Our initial domain is 'localhost' so our podx pod will serving requests at `http://localhost`. Likewise if you are building using a dns domain like 'example.com' then the podx pod will serving your app at 'http://example.com'.
+
+When developing by editing and building from source files the pod should always be running. 
+If a build succeeds, it means the changes have already been implemented on the running pod instance.
+You do not have to stop and start your pod, after a build.
+
+To get as they happen live view of your changes in the browser, 
+ you can use something like [tab-reloader](https://github.com/james-fray/tab-reloader) which is 
+ available for most common browsers.
 
 
-## WIP note
-
-Code is a work in progress.
-Some stuff is pulled from other projects, and needs to be rewritten for this project.
-I try to take 'show not tell' approach,
-so working code will be run on 'github actions'
-and will be making some asciicast.
 
 
 
