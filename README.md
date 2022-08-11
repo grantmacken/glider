@@ -196,13 +196,26 @@ When you invoke a subsequent `make`, only edited files will be built.
 
 There are build targets for each container volume. 
 
- - `make code`: compiles XQuery main and library modules into beam files, registers library modules and sets web app routes from restXQ libraries.
-  XQuery code from `src/code` goes into `xqerl-code` volume
+ - `make code`: 
+  - compiles XQuery main and library modules into beam files, 
+  - registers library modules and 
+  - sets web app routes from restXQ libraries.
  - `make data`:  data pipeline preprocessing (munging|wrangling) to create XDM items for xqerl database. 
- Data from `src/data` goes into the `xqerl-database` volume 
- - `make assets`: preprocessing asset pipeline to store binary and unparsed text files. Assets from `src/assets` goes into the `static-assets` volume
-`static-assets` volume
-    - `make confs` nginx configuration files`src/proxy/cong` goes into the `proxy-conf` volume 
+ - `make assets`: preprocessing asset pipeline to store binary and unparsed text files.
+ - `make confs` nginx configuration files
+
+The `inc` include directory contains make files named after the above targets.
+Here you can add or adjust the declarative targets and the consequent pipelined lines of shell script 
+that will be executed when the build chain runs.
+
+Most targets will have a corresponding `clean` and `list` target
+ 
+ ```shell
+ make styles       # the cascading style sheets build chain
+ make styles-list  # list styles stored in the static-assets volume
+ make styles-clean # remove styles stored in the static-assets volume
+ ```
+
  
 ### A Site Domain Is Always Being Served
 

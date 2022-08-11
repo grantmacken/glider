@@ -45,8 +45,7 @@ assets-clean:
 #############
 
 .PHONY: styles 
-styles: $(stylesBuild)
-
+styles: $(stylesBuild) ## static-assets: cascading style sheets build chain
 .PHONY: styles-clean
 styles-clean:
 	rm -v $(stylesBuild) || true
@@ -54,9 +53,9 @@ styles-clean:
 		-c 'rm priv/static/assets/styles/*' || true
 
 .PHONY: styles-list
-styles-list:
+styles-list: ## static-assets:  list stored styles
 	podman run --rm --interactive --mount $(MountAssets) --entrypoint "sh" $(XQ) \
-		-c 'ls priv/static/assets/styles'
+		-c 'ls -R priv/static/assets/styles'
 
 _build/assets/styles/%: src/assets/styles/%
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
