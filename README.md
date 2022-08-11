@@ -197,9 +197,9 @@ When you invoke a subsequent `make`, only edited files will be built.
 There are build targets for each container volume. 
 
  - `make code`: 
-  - compiles XQuery main and library modules into beam files, 
-  - registers library modules and 
-  - sets web app routes from restXQ libraries.
+    - compiles XQuery main and library modules into beam files, 
+    - registers library modules and 
+    - sets web app routes from restXQ libraries.
  - `make data`:  data pipeline preprocessing (munging|wrangling) to create XDM items for xqerl database. 
  - `make assets`: preprocessing asset pipeline to store binary and unparsed text files.
  - `make confs` nginx configuration files
