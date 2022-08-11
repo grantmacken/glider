@@ -125,14 +125,14 @@ In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managin
 
 The podx pod has the following volume mounts:
 
-**xq**: has these volume mounts
+The container named **xq** has these volume mounts
  - **xqerl-database** volume: holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
- - **xqerl-code** volume: holds user main and library XQuery modules which are compiled into beam files
- - **static-assets** volume: holds binary and unparsed text files in the container filesystem. 
+ - The **xqerl-code** volume holds user main and library XQuery modules which are compiled into beam files
+ - The **static-assets** volume holds binary and unparsed text files in the container filesystem. 
 
- **or**: has these volume mounts
- - **proxy-conf** volume: holds nginx configuration files
- - **letsencrypt** volume: will hold TLS certs from letsencrypt
+ The container named **or** has these volume mounts
+ -  The **proxy-conf** volume holds nginx configuration files
+ -  The **letsencrypt** volume will hold TLS certs from letsencrypt
 
 The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
  The xqerl-code and xqerl-database are volumes which allow us to persist xqerl **application state** 
@@ -143,8 +143,6 @@ The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
 After we have developed a web app based on our dns domain, 
 deployment is a matter of running a remote instance of our pod with attached volumes.
  
-
-
  Volumes can be seen as deployable artifacts. 
  To deploy we can export local volumes and export import these volumes on a remote hosts.
  This means, what we run and serve locally in our development environment 
@@ -164,37 +162,20 @@ A tree view of the src folder reflects what gets stored into the respective cont
 
 ```shell
 src
-├── assets => docker static-assets volume
-├── code   => docker xqerl-code volume
-├── data   => docker xqerl-database volume
+├── assets => into static-assets volume
+├── code   => into xqerl-code volume
+├── data   => into xqerl-database volume
 └── proxy
-    └── conf => docker proxy-conf volume
+    └── conf => into proxy-conf volume
 ```
+
+When the pod is running, after editing a source file you can build by running `make`
+This triggers the build process for the `code` , `assets`, `data`, `confs` targets.
+When you invoke a subsequent `make`, only edited files will be built.
 
 The source files are not directly copied into their respective volumes.
  They are *build sources* which are *piped* through a input-output build process stages,
- and the end result then stored into a container volume.  
- To trigger the build process we just run the default make target `make`.
- The **build artifacts** are the docker volumes exported as tar files. 
- These build result artifacts tars are in the `_deploy` directory.
-
-```shell
-├── proxy-conf.tar
-├── static-assets.tar
-├── xqerl-code.tar
-└── xqerl-database.tar
-```
-
-### The Make Build Target
-
-When the pod is running, after editing a source file you can build by running `make`
-The default Make target is `make build` so `make` will run `make build`.
-
-When you invoke a subsequent `make`, only edited files will be built.
-
-### Build Sub Targets
-
-There are build targets for each container volume. 
+ with the end result stored into a container volume.
 
  - `make code`: 
     - compiles XQuery main and library modules into beam files, 
@@ -208,6 +189,14 @@ The `inc` include directory contains make files named after the above targets.
 Here you can add or adjust the declarative targets and the consequent pipelined lines of shell script 
 that will be executed when the build chain runs.
 
+For example since targets can have sub targets, e.g.
+the `make assets` target will have sub target declarations with thier own build chains
+for getting stuff into the static-assets volume. 
+
+With
+ - `make styles`:  you might want build chain that use postcss
+ - `make scripts`: you might want a build chain to compile typescript files
+
 Most targets will have a corresponding `clean` and `list` target
  
  ```shell
@@ -215,21 +204,36 @@ Most targets will have a corresponding `clean` and `list` target
  make styles-list  # list styles stored in the static-assets volume
  make styles-clean # remove styles stored in the static-assets volume
  ```
-
  
 ### A Site Domain Is Always Being Served
 
 Our initial domain is 'localhost' so our podx pod will serving requests at `http://localhost`. Likewise if you are building using a dns domain like 'example.com' then the podx pod will serving your app at 'http://example.com'.
-
 When developing by editing and building from source files the pod should always be running. 
 If a build succeeds, it means the changes have already been implemented on the running pod instance.
 You do not have to stop and start your pod, after a build.
 
-To get as they happen live view of your changes in the browser, 
+All you have to do is refresh you browser to see changes.
+
+If you want to automate this browser refresh, 
  you can use something like [tab-reloader](https://github.com/james-fray/tab-reloader) which is 
  available for most common browsers.
 
+### Exported Volumes As Build Artefacts
 
+Build artifact tars are in the `_deploy` directory.
+These are exported tars of the container volumes.
 
+With `make conf` and `make assets` the respective tars automatically generated.
+These stuff in 'proxy-conf' and 'static-assets' volume are just files,
+ so we don't have to worry about running processes tied to the volumes.
+However with the `xqerl-database` and `xqerl-code` since there might be running processes
+we pause the container first, then export, then unpause.
 
+```shell
+_deploy
+├─ proxy-conf.tar     <- make conf
+├─ static-assets.tar  <- make assets
+├─ xqerl-code.tar     <- make code-volume-export
+└─ xqerl-database.tar <- make data-volume-export
 
+```

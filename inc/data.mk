@@ -30,7 +30,9 @@ data-list-remote: ## xqerl-db: list db items on remote xq container
 
 .PHONY: data-volume-export
 data-volume-export:
+	podman pause xq
 	podman volume export xqerl-database > _deploy/xqerl-database.tar
+	podman unpause xq
 
 .PHONY: data-volume-import
 data-volume-import: down

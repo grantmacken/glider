@@ -1,7 +1,7 @@
 ## XQUERY CODE ##
 # 1. main modules: on write, compiled
 # 2. library modules: on write, compiled, registered lib
-# Exept for restXQ modules,  modules are in a flat directory structure: src/code/{name}.{xq or xqm}
+# Except for restXQ modules,  modules are in a flat directory structure: src/code/{name}.{xq or xqm}
 # xq for main modules 
 # xqm for library modules
 # restXQ modules are the src/routes directory
@@ -31,7 +31,9 @@ code-clean: # remove: `make code` build artifacts
 .PHONY: code-volume-export
 code-volume-export:
 	echo "##[ $(@) ]##"
+	podman pause xq
 	podman volume export xqerl-code > _deploy/xqerl-code.tar
+	podman unpause xq
 
 .PHONY: code-volume-import
 code-volume-import: down
