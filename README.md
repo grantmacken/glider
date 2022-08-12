@@ -141,12 +141,13 @@ The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
 ### The Central Importance of Container Volumes
 
 After we have developed a web app based on our dns domain, 
-deployment is a matter of running a remote instance of our pod with attached volumes.
- 
- Volumes can be seen as deployable artifacts. 
- To deploy we can export local volumes and export import these volumes on a remote hosts.
+deployment is simply a matter of running a remote instance of our pod with mounted volumes.
+
+ To **deploy** we can export local volumes and import these volumes on a remote host.
+ The reverse is also true, we can export volumes on a remote host and import these volumes on a local host.
+
  This means, what we run and serve locally in our development environment 
- can be the same as what runs and serves on a remote cloud instance
+ can be the same as what runs and serves on a remote cloud instance.
 
 The development of a web app with a local running pod instance,
  is a matter of getting stuff into the attached volumes.
@@ -155,27 +156,25 @@ The development of a web app with a local running pod instance,
 
 Our local development build cycle will consists of:
  1. **editing** source files located in the src directory
- 2. **building** by running `make` which stores build-target results into appropiate container volumes
+ 2. **building** storing build-chain result items into appropiate container volumes 
+ then creating a build artefact tar of the respective volume.
  3. **checking** the build which is site reachable at your development dns domain e.g. http://example.com
-
-A tree view of the src folder reflects what gets stored into the respective container volumes.
 
 ```shell
 src
-├── assets => into static-assets volume
-├── code   => into xqerl-code volume
-├── data   => into xqerl-database volume
+├── assets -> into static-assets volume -> export as static-assets.tar
+├── code   -> into xqerl-code volume -> export as xqerl-code.tar
+├── data   -> into xqerl-database volume -> export as xqerl-database.tar
 └── proxy
-    └── conf => into proxy-conf volume
+    └── conf -> into proxy-conf volume -> export as xqerl-database.tar
 ```
 
 When the pod is running, after editing a source file you can build by running `make`
-This triggers the build process for the `code` , `assets`, `data`, `confs` targets.
 When you invoke a subsequent `make`, only edited files will be built.
 
 The source files are not directly copied into their respective volumes.
- They are *build sources* which are *piped* through a input-output build process stages,
- with the end result stored into a container volume.
+ They are *build sources* which are *piped* through a input-output build chain
+ with resulting items stored in a container volume.
 
  - `make code`: 
     - compiles XQuery main and library modules into beam files, 
@@ -189,6 +188,7 @@ The `inc` include directory contains make files named after the above targets.
 Here you can add or adjust the declarative targets and the consequent pipelined lines of shell script 
 that will be executed when the build chain runs.
 
+<!--
 For example since targets can have sub targets, e.g.
 the `make assets` target will have sub target declarations with thier own build chains
 for getting stuff into the static-assets volume. 
@@ -196,18 +196,20 @@ for getting stuff into the static-assets volume.
 With
  - `make styles`:  you might want build chain that use postcss
  - `make scripts`: you might want a build chain to compile typescript files
+-->
 
 Most targets will have a corresponding `clean` and `list` target
  
  ```shell
- make styles       # the cascading style sheets build chain
+ make styles       # build chain to put CSS into the static-assets volume
  make styles-list  # list styles stored in the static-assets volume
  make styles-clean # remove styles stored in the static-assets volume
  ```
+
+You can run `make help` to list the targets.
  
 ### A Site Domain Is Always Being Served
 
-Our initial domain is 'localhost' so our podx pod will serving requests at `http://localhost`. Likewise if you are building using a dns domain like 'example.com' then the podx pod will serving your app at 'http://example.com'.
 When developing by editing and building from source files the pod should always be running. 
 If a build succeeds, it means the changes have already been implemented on the running pod instance.
 You do not have to stop and start your pod, after a build.
@@ -223,16 +225,19 @@ If you want to automate this browser refresh,
 Build artifact tars are in the `_deploy` directory.
 These are exported tars of the container volumes.
 
-With `make conf` and `make assets` the respective tars automatically generated.
-These stuff in 'proxy-conf' and 'static-assets' volume are just files,
- so we don't have to worry about running processes tied to the volumes.
-However with the `xqerl-database` and `xqerl-code` since there might be running processes
-we pause the container first, then export, then unpause.
+Since the `proxy-conf` and `static-assets` volumes only contain files,
+ we don't have to worry about running processes tied to the volumes.
+These`proxy-conf` and `static-assets` tars are generated when running `make`.
+
+However with the `xqerl-database` and `xqerl-code`, 
+ since there might be running processes,
+ we have extra targets `make code-volume-export` and `make data-volume-export`
+ where we pause the container first, then export, then unpause.
 
 ```shell
 _deploy
-├─ proxy-conf.tar     <- make conf
-├─ static-assets.tar  <- make assets
+├─ proxy-conf.tar   
+├─ static-assets.tar
 ├─ xqerl-code.tar     <- make code-volume-export
 └─ xqerl-database.tar <- make data-volume-export
 

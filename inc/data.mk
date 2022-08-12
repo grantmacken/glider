@@ -15,7 +15,13 @@ xmlBuild := $(patsubst src/%,_build/%,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
-data: $(mdBuild) $(xmlBuild) $(xqBuild)## xqerl-db: store xdm data items into db
+data: _deploy/xqerl-database.tar
+
+_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-database: store XDM data items into db
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	podman pause xq
+	podman volume export xqerl-database > $@
+	podman unpause xq
 
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) ## xqerl-db: store xdm data items into db on remote xq container

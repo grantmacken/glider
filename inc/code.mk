@@ -18,7 +18,13 @@ xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(call rwildcard,src/data,*.x
 # $(mainModulesBuild) $(xqDataBuild)
 
 .PHONY: code 
-code: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) ## XQuery modules: register library modules
+code: _deploy/xqerl-code.tar ## XQuery modules: register library modules
+
+_deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild)
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	podman pause xq
+	podman volume export xqerl-code > $@
+	podman unpause xq
 
 .PHONY: code-deploy
 code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild)) ## XQuery modules: register library modules on remote xq container
@@ -27,13 +33,6 @@ code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild)) ## 
 code-clean: # remove: `make code` build artifacts
 	echo '##[ $@ ]##'
 	rm -fv  $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
-
-.PHONY: code-volume-export
-code-volume-export:
-	echo "##[ $(@) ]##"
-	podman pause xq
-	podman volume export xqerl-code > _deploy/xqerl-code.tar
-	podman unpause xq
 
 .PHONY: code-volume-import
 code-volume-import: down
