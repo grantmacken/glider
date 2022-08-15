@@ -113,6 +113,13 @@ clean: down init-clean
 .PHONY: xq-up # in podx listens on port 8081/tcp 
 xq-up: podx
 	echo "##[ $(@) ]##" 
+	STATUS=$$(podman inspect -f '{{.State.Status}}' xq)
+	if [[ $$STATUS == 'created' ]] || [[ $$STATUS == 'exited' ]]
+	then podman start xq
+	fi
+	if [[ $$STATUS == 'paused' ]]
+	then podman unpause xq
+	fi
 	if ! podman ps | grep -q $(XQ)
 	then
 	podman run --name xq --pod $(POD) \
@@ -124,10 +131,18 @@ xq-up: podx
 	sleep 2 # add bigger delay
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
 	fi
+	podman inspect -f '{{.State.Status}}' xq
 
 .PHONY: or-up # 
 or-up: xq-up
 	echo "##[ $(@) ]##"
+	STATUS=$$(podman inspect -f '{{.State.Status}}' or)
+	if [[ $$STATUS == 'created' ]] || [[ $$STATUS == 'exited' ]]
+	then podman start or
+	fi
+	if [[ $$STATUS == 'paused' ]]
+	then podman unpause or
+	fi
 	if ! podman ps | grep -q $(OR)
 	then
 	podman run --pod $(POD) \
@@ -136,8 +151,8 @@ or-up: xq-up
 		--mount $(MountLetsencrypt) \
 		--tz=$(TIMEZONE) \
 		--detach $(OR)
-	podman ps -a --pod | grep -oP '$(OR)(.+)$$'
 	fi
+	podman inspect -f '{{.State.Status}}' xq
 
 .PHONY: or-down
 or-down: #TODO use systemd instead
