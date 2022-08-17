@@ -157,7 +157,7 @@ The development of a web app with a local running pod instance,
 Our local development build cycle will consists of:
  1. **editing** source files located in the src directory
  2. **building** storing build-chain result items into appropiate container volumes 
- then creating a build artefact tar of the respective volume.
+ then creating a **build artefact** tar of the respective volume.
  3. **checking** the build which is site reachable at your development dns domain e.g. http://example.com
 
 ```shell
@@ -168,6 +168,8 @@ src
 └── proxy
     └── conf -> into proxy-conf volume -> export as xqerl-database.tar
 ```
+
+Build artifact tars are in the `_deploy` directory.
 
 When the pod is running, after editing a source file you can build by running `make`
 When you invoke a subsequent `make`, only edited files will be built.
@@ -220,25 +222,46 @@ If you want to automate this browser refresh,
  you can use something like [tab-reloader](https://github.com/james-fray/tab-reloader) which is 
  available for most common browsers.
 
-### Exported Volumes As Build Artefacts
 
-Build artifact tars are in the `_deploy` directory.
-These are exported tars of the container volumes.
+## Running xqerl as a service
 
-Since the `proxy-conf` and `static-assets` volumes only contain files,
- we don't have to worry about running processes tied to the volumes.
-These`proxy-conf` and `static-assets` tars are generated when running `make`.
+[![asciicast](https://asciinema.org/a/515367.svg)](https://asciinema.org/a/515367)
 
-However with the `xqerl-database` and `xqerl-code`, 
- since there might be running processes,
- we have extra targets `make code-volume-export` and `make data-volume-export`
- where we pause the container first, then export, then unpause.
+On linux os you can set the pod to run as a systemd **user** service.
+A systemd **user** service does not run as root but under a login user.
+This will mean the xqerl XQuery application server will automatically be available 
+to you when your operating system boots.
 
-```shell
-_deploy
-├─ proxy-conf.tar   
-├─ static-assets.tar
-├─ xqerl-code.tar     <- make code-volume-export
-└─ xqerl-database.tar <- make data-volume-export
+NOTE: This is for a modern linux OS only which supports linux kernel [Control Group v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html). 
 
 ```
+make service-enable
+```
+
+After reboot we can now use systemctl to 
+ - check service status
+ - stop the service
+ - start the service
+
+```
+# check service status
+make service-status
+# list containers running in the pod
+podman ps --pod --all
+# stop the service
+make service-stop
+# list containers: 'xq' ond 'or' containers should now have exited
+podman ps --pod --all
+# restart the service
+# 'xq' ond 'or' containers should now be up
+podman ps --pod --all
+# check the xqerl container log 'xq'
+podman log xq
+# display the running processes of the container xq
+podman top xq
+# see what resource are being used in our pod
+podman stats --no-stream
+```
+
+
+

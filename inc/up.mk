@@ -166,12 +166,10 @@ xq-down: #TODO use systemd instead
 	podman stop xq || true
 	podman rm xq || true
 
-.PHONY: service
-service:
+.PHONY: service-enable
+service-enable:
 	echo "##[ $(@) ]##"
-	which systemctl &>/dev/null || echo 'ERROR: For linux OS only: requires init systemd'; false
-	grep -q cgroup2 /proc/filesystems  || \
-		echo 'ERROR: For newer linux OS only: requires system support for cgroup2 '; false
+	which systemctl &>/dev/null || echo 'ERROR: For linux OS only: requires init systemd'
 	loginctl enable-linger $(USER) || true
 	mkdir -p $(HOME)/.config/systemd/user
 	rm -f *.service
@@ -185,8 +183,13 @@ service:
 	systemctl --user is-enabled container-xq.service &>/dev/null || systemctl --user enable container-xq.service
 	systemctl --user is-enabled container-or.service &>/dev/null || systemctl --user enable container-or.service
 	systemctl --user is-enabled pod-podx.service &>/dev/null || systemctl --user enable pod-podx.service
-	systemctl --user restart pod-podx.service &>/dev/null
+	$(DASH)
+	echo -n 'pod-podx.service enabled: '
+	systemctl --user is-enabled pod-podx.service || true
+	$(DASH)
+	# systemctl --user restart pod-podx.service &>/dev/null
 	rm -f *.service
+	podman pod stop $(POD)
 	#reboot
 
 # Note systemctl should only be used on the pod unit and one should not start 
@@ -195,21 +198,33 @@ service:
 service-start: 
 	systemctl --user start pod-podx.service
 	$(DASH)
-	systemctl --user --no-pager status pod-podx.service
-	$(DASH)
-	podman ps -a --pod
+	sleep 2
+	echo -n 'container xq status: '
+	podman inspect -f '{{.State.Status}}' xq
+	sleep 2
+	echo -n 'container or status: '
+	podman inspect -f '{{.State.Status}}' or
 	$(DASH)
 
 .PHONY: service-stop
 service-stop:
-	@systemctl --user stop  pod-podx.service || true
+	systemctl --user stop  pod-podx.service || true
+	$(DASH)
+	echo -n 'container xq status: '
+	podman inspect -f '{{.State.Status}}' xq
+	echo -n 'container or status: '
+	podman inspect -f '{{.State.Status}}' or
+	$(DASH)
 
 .PHONY: service-status
 service-status:
 	echo "##[ $(@) ]##"
-	systemctl --user --no-pager status pod-podx.service
+	systemctl --user --no-pager status pod-podx.service || true
 	$(DASH)
-	# journalctl --no-pager -b CONTAINER_NAME=or
+	echo -n 'container xq status: '
+	podman inspect -f '{{.State.Status}}' xq
+	echo -n 'container or status: '
+	podman inspect -f '{{.State.Status}}' or
 	$(DASH)
 
 .PHONY: journal

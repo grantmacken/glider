@@ -64,12 +64,13 @@ element html {
       element li { 
             element a {
               attribute href {'/docs/static-assets'},
-              text {'Working with Static Assets'}}}},
+              text {'Working with Static Assets'}}}}
+(:
      element div {  
         attribute id { 'demo' },
         element script{ "AsciinemaPlayer.create('/assets/casts/xqerl-up-and-flying.cast', document.getElementById('demo'));" }
       }
-
+:)
       }}}}
  )};
 
@@ -93,32 +94,6 @@ element body{
   element footer { 'footer placeholder'}}
 else  ()
 };
-
-
-
-(:
- element html {
-  attribute lang {'en'},
-  _:index_head(map { 'title': 'xqerl glider docs'}),
-   element body{
-    element header {
-      attribute role { "banner" },
-      element h1 { 'xqerl glider docs' }},
-      element main { 
-        element ul {
-          attribute hx-boost {'true'},
-          attribute role {'list'},
-          element li { element a {}}}}}
-
-
-
-
-  map {
-   'header_title': 'xqerl glider docs',
-   'content': doc( $dbDocURI ) =>  cmark:dispatch()
-  } => $dbLayoutConstructor()
-  }
-:)
 
 
 declare function _:resHeader( $m as map(*) ) as element() {
