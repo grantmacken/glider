@@ -126,7 +126,7 @@ In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managin
 The podx pod has the following volume mounts:
 
 The container named **xq** has these volume mounts
- - **xqerl-database** volume: holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
+ - The **xqerl-database** volume holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
  - The **xqerl-code** volume holds user main and library XQuery modules which are compiled into beam files
  - The **static-assets** volume holds binary and unparsed text files in the container filesystem. 
 
@@ -166,7 +166,7 @@ src
 ├── code   -> into xqerl-code volume -> export as xqerl-code.tar
 ├── data   -> into xqerl-database volume -> export as xqerl-database.tar
 └── proxy
-    └── conf -> into proxy-conf volume -> export as xqerl-database.tar
+    └── conf -> into proxy-conf volume -> export as proxy-conf.tar
 ```
 
 Build artifact tars are in the `_deploy` directory.
