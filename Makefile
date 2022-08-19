@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .ONESHELL:
-.SHELLFLAGS := -O globstar -eu -o pipefail -c
+.SHELLFLAGS := -eu -o pipefail -c
 .DELETE_ON_ERROR:
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
@@ -23,7 +23,7 @@ MountCode := type=volume,target=/usr/local/xqerl/code,source=xqerl-code
 MountData := type=volume,target=/usr/local/xqerl/data,source=xqerl-database
 MountAssets := type=volume,target=/usr/local/xqerl/priv/static/assets,source=static-assets
 # proxy volume mounts
-MountProxyConf   := type=volume,target=/opt/proxy/conf,source=proxy-conf
+MountProxy   := type=volume,target=/opt/proxy,source=proxy
 MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
 DASH = printf %60s | tr ' ' '-' && echo
 
@@ -47,7 +47,7 @@ include inc/def/*.def
 include inc/*.mk
 
 .PHONY: build
-build: code data assets confs ## default target
+build: code data assets ## default xqerl target
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean

@@ -13,15 +13,8 @@ up: or-up
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
 	podman ps --all --pod
 	echo && $(DASH)
-	if grep -oP '$(DNS_DOMAIN)' /etc/hosts &>/dev/null
-	then
-	$(call Dump,'http',$(DNS_DOMAIN),/xqerl)
-	else
 	$(call Dump,'http',localhost,/xqerl)
-	fi
 	echo && $(DASH)
-	# after up put resources
-	$(MAKE)
 
 .PHONY: images ## pull docker images
 images: 
@@ -38,11 +31,11 @@ volumes: images
 	@podman volume exists xqerl-code || podman volume create xqerl-code
 	@podman volume exists xqerl-database || podman volume create xqerl-database
 	@podman volume exists static-assets || podman volume create static-assets
-	@podman volume exists proxy-conf || podman volume create proxy-conf
+	@podman volume exists proxy || podman volume create proxy
 	@podman volume exists letsencrypt || podman volume create letsencrypt
 
 .PHONY: volumes-clean
-volumes-clean: volumes-remove-static-assets volumes-remove-xqerl-code volumes-remove-xqerl-database volumes-remove-proxy-conf
+volumes-clean: volumes-remove-static-assets volumes-remove-xqerl-code volumes-remove-xqerl-database volumes-remove-proxy
 	echo "##[ $(@) ]##"
 
 .PHONY: volumes-remove-static-assets
@@ -60,15 +53,15 @@ volumes-remove-xqerl-database:
 	echo '##[ $@ ]##'
 	podman volume remove xqerl-database || true
 
-.PHONY: volumes-remove-proxy-conf
-volumes-remove-proxy-conf:
+.PHONY: volumes-remove-proxy
+volumes-remove-proxy:
 	echo '##[ $@ ]##'
-	podman volume remove proxy-conf || true
+	podman volume remove proxy || true
 
 .PHONY: volumes-import
 volumes-import:
 	echo "##[ $(@) ]##"
-	if [ -f _deploy/proxy-conf.tar ] ; then podman volume import proxy-conf _deploy/proxy-conf.tar ;fi
+	if [ -f _deploy/proxy.tar ] ; then podman volume import proxy _deploy/proxy.tar ;fi
 	if [ -f _deploy/static-assets.tar ] ; then podman volume import static-assets _deploy/static-assets.tar ;fi
 
 .PHONY: podx
@@ -83,12 +76,8 @@ podx: volumes #
 
 .PHONY: down
 down:
-	echo "##[ $(@) ]##" 
-	podman pod list
-	podman ps -a --pod
-	podman pod stop -a || true
-	podman pod rm $(POD) || true
-	podman rm --all
+	echo "##[ $(@) ]##"
+	podman pod rm --force $(POD) || true
 	podman ps --all --pod
 
 .PHONY: clean
@@ -97,8 +86,8 @@ clean: down init-clean
 	# rm artefacts from 'build' target
 	rm -fr _build
 	# rm artefacts from 'init' target
-	rm -v src/data/$(DNS_DOMAIN)/*  || true
-	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm  || true
+	# rm -v src/data/$(DNS_DOMAIN)/*  || true
+	# rm -v src/code/routes/$(DNS_DOMAIN).xqm  || true
 	@systemctl --user stop pod-podx.service || true
 	@systemctl --user disable container-xq.service || true
 	@systemctl --user disable container-or.service || true
@@ -107,20 +96,14 @@ clean: down init-clean
 	rm -f container-or.service container-xq.service pod-podx.service
 	popd
 	@systemctl --user daemon-reload
+	podman pod rm --force $(POD)
 	podman system prune --all --force
 	podman system prune --volumes --force
 
 .PHONY: xq-up # in podx listens on port 8081/tcp 
 xq-up: podx
 	echo "##[ $(@) ]##" 
-	STATUS=$$(podman inspect -f '{{.State.Status}}' xq)
-	if [[ $$STATUS == 'created' ]] || [[ $$STATUS == 'exited' ]]
-	then podman start xq
-	fi
-	if [[ $$STATUS == 'paused' ]]
-	then podman unpause xq
-	fi
-	if ! podman ps | grep -q $(XQ)
+	if ! podman ps --all | grep -q $(XQ)
 	then
 	podman run --name xq --pod $(POD) \
 		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
@@ -130,27 +113,36 @@ xq-up: podx
 	podman ps -a --pod | grep -oP '$(XQ)(.+)$$'
 	sleep 2 # add bigger delay
 	podman exec xq xqerl eval 'application:ensure_all_started(xqerl).'
+	else
+	STATUS=$$(podman inspect -f '{{.State.Status}}' xq)
+	if [[ "$$STATUS" == "created" ]] || [[ "$$STATUS" == "exited" ]]
+	then podman start xq
+	fi
+	if [[ "$$STATUS" == "paused" ]]
+	then podman unpause xq
+	fi
 	fi
 	podman inspect -f '{{.State.Status}}' xq
 
 .PHONY: or-up # 
 or-up: xq-up
 	echo "##[ $(@) ]##"
-	STATUS=$$(podman inspect -f '{{.State.Status}}' or)
-	if [[ $$STATUS == 'created' ]] || [[ $$STATUS == 'exited' ]]
-	then podman start or
-	fi
-	if [[ $$STATUS == 'paused' ]]
-	then podman unpause or
-	fi
-	if ! podman ps | grep -q $(OR)
+	if ! podman ps --all | grep -q $(OR)
 	then
 	podman run --pod $(POD) \
 		--name or \
-		--mount $(MountProxyConf) \
+		--mount $(MountProxy) \
 		--mount $(MountLetsencrypt) \
 		--tz=$(TIMEZONE) \
 		--detach $(OR)
+	else
+	STATUS=$$(podman inspect -f '{{.State.Status}}' or)
+	if [[ "$$STATUS" == "created" ]] || [[ "$$STATUS" == "exited" ]]
+	then podman start or
+	fi
+	if [[ "$$STATUS" == "paused" ]]
+	then podman unpause or
+	fi
 	fi
 	podman inspect -f '{{.State.Status}}' xq
 
@@ -192,6 +184,18 @@ service-enable:
 	podman pod stop $(POD)
 	#reboot
 
+.PHONY: service-disable
+service-disable: 
+	@systemctl --user stop pod-podx.service || true
+	@systemctl --user disable container-xq.service || true
+	@systemctl --user disable container-or.service || true
+	@systemctl --user disable pod-podx.service || true
+	pushd $(HOME)/.config/systemd/user/
+	rm -f container-or.service container-xq.service pod-podx.service
+	popd
+	@systemctl --user daemon-reload
+
+
 # Note systemctl should only be used on the pod unit and one should not start 
 
 .PHONY: service-start
@@ -231,67 +235,56 @@ service-status:
 journal:
 	journalctl --user --no-pager -b CONTAINER_NAME=xq
 
-.PHONY: service-clean
-service-clean: 
-	@systemctl --user stop pod-podx.service || true
-	@systemctl --user disable container-xq.service || true
-	@systemctl --user disable container-or.service || true
-	@systemctl --user disable pod-podx.service || true
-	pushd $(HOME)/.config/systemd/user/
-	rm -f container-or.service container-xq.service pod-podx.service
-	popd
-	@systemctl --user daemon-reload
-
 # PROJECT SCAFFOLD
 
-.PHONY: init
-init: init-$(SCAFFOLD)
-
-init-todo: src/code/restXQ/$(DOMAIN).xqm \
-	src/data/$(DOMAIN)/default_layout.xq \
-	src/assets/styles/$(SCAFFOLD)/base.css \
-	src/assets/styles/$(SCAFFOLD)/index.css
-
-node_modules/todomvc-app-css/index.css:
-	npm install todomvc-app-css
-
-node_modules/todomvc-common/base.css:
-	npm install todomvc-common
-
-src/assets/styles/$(SCAFFOLD)/index.css: node_modules/todomvc-app-css/index.css
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	cp -v $< $@
-
-src/assets/styles/$(SCAFFOLD)/base.css: node_modules/todomvc-common/base.css
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	cp -v $< $@
-
-.PHONY: init-clean
-init-clean:  data-init-clean code-init-clean
-
-code-init-clean: 
-	rm -v src/code/restXQ/$(DNS_DOMAIN).xqm || true
-
-data-init-clean: 
-	echo '##[ $@ ]##'
-	rm -v src/data/$(DNS_DOMAIN)/index.md || true
-	rm -v src/data/$(DNS_DOMAIN)/default_layout.xq || true
-
-src/code/restXQ/$(DOMAIN).xqm: export restXQ:=$($(SCAFFOLD)_restXQ)
-src/code/restXQ/$(DOMAIN).xqm:
-	echo '##[ $@ ]##'
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo "$${restXQ}" > $@
-
-src/data/$(DNS_DOMAIN)/index.md: export index_md:=$(index_md)
-src/data/$(DNS_DOMAIN)/index.md:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(notdir $@) ]##'
-	echo "$${index_md}"  > $@
-	ls -l $@
-
-src/data/$(DOMAIN)/default_layout.xq: export layout:=$($(SCAFFOLD)_layout)
-src/data/$(DOMAIN)/default_layout.xq:
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[  $@ ]##'
-	echo "$${layout}"  > $@
+# .PHONY: init
+# init: init-$(SCAFFOLD)
+#
+# init-todo: src/code/routes/$(DOMAIN).xqm \
+# 	src/data/$(DOMAIN)/default_layout.xq \
+# 	src/assets/styles/$(SCAFFOLD)/base.css \
+# 	src/assets/styles/$(SCAFFOLD)/index.css
+#
+# node_modules/todomvc-app-css/index.css:
+# 	npm install todomvc-app-css
+#
+# node_modules/todomvc-common/base.css:
+# 	npm install todomvc-common
+#
+# src/assets/styles/$(SCAFFOLD)/index.css: node_modules/todomvc-app-css/index.css
+# 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+# 	cp -v $< $@
+#
+# src/assets/styles/$(SCAFFOLD)/base.css: node_modules/todomvc-common/base.css
+# 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+# 	cp -v $< $@
+#
+# .PHONY: init-clean
+# init-clean:  data-init-clean code-init-clean
+#
+# code-init-clean: 
+# 	rm -v src/code/routes/$(DNS_DOMAIN).xqm || true
+#
+# data-init-clean: 
+# 	echo '##[ $@ ]##'
+# 	rm -v src/data/$(DNS_DOMAIN)/index.md || true
+# 	rm -v src/data/$(DNS_DOMAIN)/default_layout.xq || true
+#
+# src/code/routes/$(DOMAIN).xqm: export routes:=$($(SCAFFOLD)_routes)
+# src/code/routes/$(DOMAIN).xqm:
+# 	echo '##[ $@ ]##'
+# 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+# 	echo "$${routes}" > $@
+#
+# src/data/$(DNS_DOMAIN)/index.md: export index_md:=$(index_md)
+# src/data/$(DNS_DOMAIN)/index.md:
+# 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+# 	echo '##[ $(notdir $@) ]##'
+# 	echo "$${index_md}"  > $@
+# 	ls -l $@
+#
+# src/data/$(DOMAIN)/default_layout.xq: export layout:=$($(SCAFFOLD)_layout)
+# src/data/$(DOMAIN)/default_layout.xq:
+# 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+# 	echo '##[  $@ ]##'
+# 	echo "$${layout}"  > $@

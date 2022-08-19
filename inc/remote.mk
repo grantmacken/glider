@@ -104,13 +104,13 @@ remote-volumes:
 		'podman volume exists xqerl-code || podman volume create xqerl-code; \
 		podman volume exists xqerl-database || podman volume create xqerl-database; \
 		podman volume exists static-assets || podman volume create static-assets; \
-		podman volume exists proxy-conf ||  podman volume create proxy-conf; \
+		podman volume exists proxy ||  podman volume create proxy; \
 		podman volume exists letsencrypt || podman volume create letsencrypt; \
 		podman volume ls '
 
 # after we have created volumes we can import from our local dev envronment
 # 1. static-assets volume
-# 2. proxy-config volumes
+# 2. proxy volumes
 # 3. xqerl-database
 # 3. xqerl-code
 
@@ -121,7 +121,7 @@ remote-volumes:
 # 4. deploy the volumes on GCE
 # 4. re service: 
 # NOTE: code and data stuff might be written on kill so we stop the service first 
-# NOTE: proxy-conf and static-assets are file-system files that are already tarred 
+# NOTE: proxy and static-assets are file-system files that are already tarred 
 .PHONY: deploy
 deploy: service-stop data-volume-export code-volume-export deploy-volumes service-start
 
@@ -221,7 +221,7 @@ remote-or-up: remote-xq-up
 	then
 	$(Gcmd) 'podman run --name or --pod $(POD) \
 		--mount $(MountLetsencrypt) \
-		--mount $(MountProxyConf) \
+		--mount $(MountProxy) \
 		--tz=$(TIMEZONE) \
 		--detach $(OR)'
 	$(Gcmd) 'podman ps -a --pod' | grep -oP '$(OR)(.+)$$'
@@ -428,11 +428,12 @@ iam-service-account-key:
 	#
 	#
 ##############################
+## letencypt section
 ## certs section
 ##############################
 
-.PHONY: certs-dry-run
-certs-dry-run:
+.PHONY: certbot-dry-run
+certbot-dry-run:
 	cat .secrets/$(GCE_KEY) | 
 	$(Gcmd) 'cat - | tee | \
 		podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \
@@ -458,8 +459,8 @@ certs-dry-run:
 # get certificates into our remote letsencrypt volume
 # then import remote letsencrypt volume into local letsencrypt volume
 # then run 'certbot certificates' and put output into local _deploy/certificates.txt 
-.PHONY: certs-renew
-certs-renew:
+.PHONY: certbot-renew
+certbot-renew:
 	cat .secrets/$(GCE_KEY) | 
 	$(Gcmd) 'cat - | tee | \
 		podman run --rm --name certbot --interactive --mount $(MountLetsencrypt) -e "GOOGLE_CLOUD_PROJECT=$(GCE_PROJECT_ID)"  \

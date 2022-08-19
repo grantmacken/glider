@@ -103,10 +103,10 @@ some of these XQuery functions and operators will not work as expected.
 
 **Image Versions**:  These can be adjusted to the latest container image versions
  
-**DNS_DOMAIN**: The intial domain in the environment file is `localhost`.
-
-The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md)
-so you can work with a specific DNS domain in the development environment e.g. `example.com`
+<!-- **DNS_DOMAIN**: The intial domain in the environment file is `localhost`. -->
+<!---->
+<!-- The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md) -->
+<!-- so you can work with a specific DNS domain in the development environment e.g. `example.com` -->
 
 ## The Podx Pod
 
@@ -131,10 +131,10 @@ The container named **xq** has these volume mounts
  - The **static-assets** volume holds binary and unparsed text files in the container filesystem. 
 
  The container named **or** has these volume mounts
- -  The **proxy-conf** volume holds nginx configuration files
+ -  The **proxy** volume holds nginx/openresty configuration files
  -  The **letsencrypt** volume will hold TLS certs from letsencrypt
 
-The proxy-conf, letsencrypt and static-assets volumes contain filesystem items
+The proxy, letsencrypt and static-assets volumes contain filesystem items
  The xqerl-code and xqerl-database are volumes which allow us to persist xqerl **application state** 
  across host reboots or stoping and and restarting the pod.
 
@@ -165,8 +165,7 @@ src
 ├── assets -> into static-assets volume -> export as static-assets.tar
 ├── code   -> into xqerl-code volume -> export as xqerl-code.tar
 ├── data   -> into xqerl-database volume -> export as xqerl-database.tar
-└── proxy
-    └── conf -> into proxy-conf volume -> export as proxy-conf.tar
+└── proxy -> into proxy volume -> export as proxy.tar
 ```
 
 Build artifact tars are in the `_deploy` directory.
@@ -184,7 +183,7 @@ The source files are not directly copied into their respective volumes.
     - sets web app routes from restXQ libraries.
  - `make data`:  data pipeline preprocessing (munging|wrangling) to create XDM items for xqerl database. 
  - `make assets`: preprocessing asset pipeline to store binary and unparsed text files.
- - `make confs` nginx configuration files
+ - `make proxy`: copy over modified configuration files for reverse proxy
 
 The `inc` include directory contains make files named after the above targets.
 Here you can add or adjust the declarative targets and the consequent pipelined lines of shell script 
