@@ -22,9 +22,9 @@ code: _deploy/xqerl-code.tar ## XQuery modules: register library modules
 
 _deploy/xqerl-code.tar: $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild)
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	podman pause xq
+	podman pause xq &>/dev/null
 	podman volume export xqerl-code > $@
-	podman unpause xq
+	podman unpause xq &>/dev/null
 
 .PHONY: code-deploy
 code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild)) ## XQuery modules: register library modules on remote xq container

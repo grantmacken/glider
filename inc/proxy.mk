@@ -3,13 +3,12 @@
 ###########################
 # files for the proxy volume
 #
-ConfList   := $(filter-out src/proxy/conf/proxy.conf , $(wildcard src/proxy/conf/*.conf)) src/proxy/conf/proxy.conf
-BuildConfs := _build/proxy/conf/mime.types $(patsubst src/%.conf,_build/%.conf,$(ConfList))
-# CheckConfs := $(patsubst src/%.conf,_checks/%.conf, $(ConfList))
-SiteConfs := $(patsubst src/%.conf,/opt/%.conf,$(ConfList))
+# ConfList   := $(filter-out src/proxy/conf/proxy.conf , $(wildcard src/proxy/conf/*.conf)) src/proxy/conf/proxy.conf
+ConfList   := $(wildcard src/proxy/conf/*.conf)
+BuildConfs := $(patsubst src/%.conf,_build/%.conf,$(ConfList))
 
-.PHONY: confs 
-confs: _deploy/proxy.tar ## proxy: check and store src files in container 'or' filesystem
+.PHONY: proxy 
+proxy: _deploy/proxy.tar ## proxy: check and store src files in container 'or' filesystem
 
 confs-deploy: #  
 	@echo '## $@ ##'
@@ -42,10 +41,4 @@ _build/proxy/conf/%.conf: src/proxy/conf/%.conf
 		 'cat - > /opt/proxy/conf/$(notdir $<) && openresty -p /opt/proxy/ -c /opt/proxy/conf/proxy.conf -t' | 
 	tee $@
 
-
-_build/proxy/conf/mime.types: src/proxy/conf/mime.types
-	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@echo '##[ $(notdir $@) ]##'
-	@cat $< | podman run  --interactive --rm  --mount $(MountProxy)  --entrypoint '["sh", "-c"]' $(OR) \
-		 'cat - > /opt/proxy/conf/$(notdir $<) && ls -l /opt/proxy/conf/$(notdir $<)' > $@
 

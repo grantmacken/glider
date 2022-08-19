@@ -30,32 +30,18 @@ element html {
           element a {
             attribute href {'/docs/intro'},
             text {'Introduction'}}},
-        element li { 
-          element a {
-            attribute href {'/docs/runtime'},
-            text {'The Podx Runtime Environment'}}},
-        element li { 
-          element a {
-            attribute href {'/docs/as-a-service'},
-            text {'Running Xqerl as a Service'}}},
-        element li { 
-          element a {
-            attribute href {'/docs/volumes'},
-            text {'Container Volumes As Deployment Artefacts'}}},
-        element li { 
-          element a {
-            attribute href {'/docs/build'},
-            text {'The Development Build Cycle'}}},
+            element li { 
+              element a {
+              attribute href {'/docs/build'},
+              text {'The Development Build Cycle'}}},
         element li { 
           element a {
             attribute href {'/docs/proxy-conf'},
             text {'Reverse Proxy Configuration'}}},
-
         element li { 
           element a {
             attribute href {'/docs/xqerl-database'},
             text {'Working with Xqerl Databases'}}},
-
        element li { 
           element a {
             attribute href {'/docs/xqerl-code'},

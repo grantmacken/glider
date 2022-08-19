@@ -2,13 +2,13 @@
 
 The 'src/code' files contain XQuery modules.
 
-```
+```shell
 src
 └── code
     ├── cm_dispatch.xqm
     ├── db-store.xq
-    └── restXQ
-        └── example.com.xqm
+    └── routes
+        └── localhost.xqm
 ```
 
 XQuery defines two types of [modules](https://www.w3.org/TR/xquery-31/#doc-xquery31-Module)
@@ -36,17 +36,23 @@ The invoked Make target `make code-library-list`
 will list the compiled library namespaces available in the 
 xqerl XQuery application server.  
 
+```shell
+> make code-library-list
+##[ code-library-list ##]
+http://xq/#cm_dispatch
+http://localhost/#routes
+```
+
 ## RestXQ Library Modules
 
-Like [other](https://docs.basex.org/wiki/RESTXQ) XQuery application servers, the xqerl code server has a restXQ implemention.
-In this project restXQ XQuery library modules are in the `src/code/restXQ` directorqy,
+Like [other](https://docs.basex.org/wiki/RESTXQ) XQuery application servers, 
+the xqerl code server has a [restXQ](https://exquery.github.io/exquery/exquery-restxq-specification/restxq-1.0-specification.html) implemention.
+In this project restXQ XQuery library modules are in the `src/code/routes` directory,
 
-
-RestXQ library modules on a basic level associates HTTP requests with XQuery functions.
-In our pod these HTTP requests are filtered via nginx acting as a reverse proxy.
-Before the URI is poxy passed to the xqerl XQuery application server we rewrite the location path 
-so it includes the **dns domain** in the request.
-
+RestXQ library modules on a basic level associate HTTP requests with XQuery functions.
+In our pod all HTTP requests are pass thru our reverse proxy server.
+The nginx reverse proxy server has its own location rewrite capablities.
+The file `./src/proxy/conf/locations.conf` holds the location rewrites 
 
 ```nginx
 location ~* ^/(index|index.html)?$ {
@@ -59,51 +65,54 @@ location / {
   proxy_pass http://localhost:8081;
 }
 ```
+The above rewrite has the following effect.
 
-1. `http://example.com/` will be proxy passed as `http://localhost:8081/example.com/index`
-2. `http://markup.nz/`   will be proxy passed as `http://localhost:8081/markup.nz/index`
+1. `http://localhost/` will be proxy passed as `http://localhost:8081/example.com/index`
+2. `https://example.com/` will be proxy passed as `http://localhost:8081/example.com/index`
+3. `https://example.com/articles/my-article` will be proxy passed as `http://localhost:8081/example.com/articles/my-article`
 
 Note: the nginx rewrite is domain based, and no adjustment to the nginx conf files is need when we swap out domains. 
-
 When we develop restXQ routes for our domains each domain gets its own restXQ library module.
 
-```
+```shell
 src
 └── code
-    └── restXQ
-        ├── example.com.xqm
-        └── markup.nz.xqm
+    └── routes
+        ├── localhost.xqm
+        └── example.com.xqm
 ```
 
-1. `http://example.com` source module `src/code/restXQ/example.com.xqm`
-2. `http://markup.nz` source module `src/code/restXQ/markup.nz.xqm`
-
-In each domain based restXQ module the `rest:path` will start with the 'domain'
+In each domain based restXQ module the `rest:path` will start with the 'domain'.
 
 
-```
+```xquery
 module namespace _ = 'http://example.com/#routes';
 declare
   %rest:path("/example.com/{$ITEM}")
   %rest:GET
   %rest:produces("text/html")
   %output:method("html")
-function _:erewhon($ITEM){
+function _:erewhon( $ITEM ){
 ...
 ```
 
- ## Web Request URI and Xqerl Database URI
+## Web Request URI and Xqerl Database Identifier URI
 
-A URI can be broken down into is constituent parts, a scheme, an authority and a path
-As Xqerl database URI are also based on a URI scheme-authority-path pattern,
-we can put data into the xqerl database that we know will share a common 'authority-path' pattern with a web request URI
-If we put data item into the xqerl database URI 'http://example.com/{path-to-some-data}'
-we can say, the data is *hosted* by 'example.com' and our restXQ functions will know this.
+A URI can be broken down into is constituent parts, a scheme, an authority and a path.
+Xqerl database URI are also based on a URI scheme-authority-path pattern.
+wing this, we put data into the xqerl database that we know will share a common 'authority-path' pattern with a web request URI. 
 
-1. nginx receives: https://example.com
-2. nginx rewrite proxy pass: http://localhost:8081/example.com/index
-3. xqerl restXQ path: /example.com/{$ITEM} invokes XQuery function
-4. XQerl function can associate request URI pattern with a db identifier because they share a common 'authority-path' pattern
+```shell
+src
+├── code
+│   ├── cm_dispatch.xqm # a library module
+│   └── routes
+│       └── example.com.xqm # restXQ module that serves HTTP requests for domain `example.com`
+├─ data
+│   └── example.com # data for database identifier `http://example.com`
+│       └── docs # data for database collection identifier `http://example.com/docs`
+│           ├── intro.md # data for database item identifier `http://example.com/docs/intro`
+```
 
 ## Compile Module Order
 

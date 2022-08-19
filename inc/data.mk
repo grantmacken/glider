@@ -19,9 +19,9 @@ data: _deploy/xqerl-database.tar
 
 _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-database: store XDM data items into db
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	podman pause xq
+	podman pause xq &>/dev/null
 	podman volume export xqerl-database > $@
-	podman unpause xq
+	podman unpause xq &>/dev/null
 
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) ## xqerl-db: store xdm data items into db on remote xq container

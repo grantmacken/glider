@@ -47,7 +47,7 @@ include inc/def/*.def
 include inc/*.mk
 
 .PHONY: build
-build: code data assets ## default xqerl target
+build: code data assets code ## default xqerl target
 
 .PHONY: build-clean
 build-clean: confs-clean code-clean data-clean assets-clean
