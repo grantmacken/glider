@@ -17,9 +17,17 @@ XQuery defines two types of [modules](https://www.w3.org/TR/xquery-31/#doc-xquer
 
  ## Compiling XQuery Library Modules
 
+```shell
+> make code
+##[ src/code/cm_dispatch.xqm ]##
+"src/code/cm_dispatch.xqm:1:Info: compiled ok! http___xq_#cm_dispatch"
+##[ src/code/routes/localhost.xqm ]##
+"src/code/routes/localhost.xqm:1:Info: compiled ok! http___localhost_#routes"
+```
+
  When we invoke `make` the xQuery *library modules* with extension `.xqm` 
  in the src/code directory are compiled by xqerl into beam files to run on the 
- [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)beam. 
+ [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang\_virtual_machine)) 
 
  If the code does not compile, the beam file will NOT be created or updated.
  When you run `make` and a compile failure happens, 
@@ -67,7 +75,7 @@ location / {
 ```
 The above rewrite has the following effect.
 
-1. `http://localhost/` will be proxy passed as `http://localhost:8081/example.com/index`
+1. `http://localhost/` will be proxy passed as `http://localhost:8081/localhost/index`
 2. `https://example.com/` will be proxy passed as `http://localhost:8081/example.com/index`
 3. `https://example.com/articles/my-article` will be proxy passed as `http://localhost:8081/example.com/articles/my-article`
 
@@ -84,16 +92,17 @@ src
 
 In each domain based restXQ module the `rest:path` will start with the 'domain'.
 
-
 ```xquery
 module namespace _ = 'http://example.com/#routes';
 declare
-  %rest:path("/example.com/{$ITEM}")
-  %rest:GET
-  %rest:produces("text/html")
-  %output:method("html")
-function _:erewhon( $ITEM ){
-...
+  %rest:path("/example.com/index")
+  ...
+ function _:index(){( ... )}
+
+declare
+  %rest:path("/example.com/articles{$ARTICLE}")
+  ...
+function _:articles( $ARTICLE ){( ... )}
 ```
 
 ## Web Request URI and Xqerl Database Identifier URI
@@ -105,8 +114,8 @@ wing this, we put data into the xqerl database that we know will share a common 
 ```shell
 src
 ├── code
-│   ├── cm_dispatch.xqm # a library module
-│   └── routes
+│   ├── cm_dispatch.xqm # a library module that can be imported
+│   └── routes  # directory to put restXQ modules 
 │       └── example.com.xqm # restXQ module that serves HTTP requests for domain `example.com`
 ├─ data
 │   └── example.com # data for database identifier `http://example.com`
@@ -116,6 +125,6 @@ src
 
 ## Compile Module Order
 
-When we invoke `make` the restXQ modules will compile after other XQuery library modules.
+When we invoke `make` the restXQ modules found in the `routes` will compile after other XQuery library modules.
 We do this because the restXQ library will often import other libraries, 
 so we need to compile these libraries first.

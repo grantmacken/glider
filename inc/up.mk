@@ -11,8 +11,15 @@ up: or-up
 	$(DASH)
 	# access xqerl in the pods internal network
 	#podman run --rm --name req1 --pod $(POD) $(W3M) -dump http://localhost:8081/xqerl
-	podman ps --all --pod
-	echo && $(DASH)
+	$(DASH)
+	sleep 1
+	echo -n 'container xq status: '
+	podman inspect -f '{{.State.Status}}' xq
+	sleep 1
+	echo -n 'container or status: '
+	podman inspect -f '{{.State.Status}}' or
+	$(DASH)
+	sleep 1
 	$(call Dump,'http',localhost,/xqerl)
 	echo && $(DASH)
 

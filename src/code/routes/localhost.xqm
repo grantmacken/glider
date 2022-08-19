@@ -25,6 +25,7 @@ element html {
       element article { 
       element ul {
         attribute hx-boost {'true'},
+        attribute hx-push-url {'true'},
         attribute role {'list'},
         element li { 
           element a {

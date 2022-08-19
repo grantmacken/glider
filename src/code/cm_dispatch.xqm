@@ -3,7 +3,7 @@ declare namespace cm ="http://commonmark.org/xml/1.0";
 
 declare
 function _:frontmatter( $body as document-node() ) as map(*) {
-try{
+try { 
 map:merge(
   ($body//cm:html_block[1]/string() =>
     replace('(^[\s]+<!--[\s]+)|([\s]+-->[\s]+)','') =>
