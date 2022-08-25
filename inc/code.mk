@@ -61,7 +61,6 @@ _build/code/%.xqm.txt: src/code/%.xqm
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if podman ps -a | grep -q $(XQ)
 	then
-	echo '##[ $< ]##'
 	podman cp $< xq:/home/
 	podman exec xq xqerl eval '
 	Res = try
@@ -70,7 +69,7 @@ _build/code/%.xqm.txt: src/code/%.xqm
 		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
 	 catch
 	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
-	 end.' | tee $@
+	 end.' | sed 's/"//g' | tee $@
 	grep -q :Info: $@
 	sleep 1
 	fi
@@ -88,7 +87,6 @@ _deploy/code/%.txt: _build/code/%.txt
 
 _build/code/%.xq.txt: src/code/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[  $<  ]##'
 	if podman ps -a | grep -q $(XQ)
 	then
 	podman cp $< xq:/home/
@@ -99,7 +97,7 @@ _build/code/%.xq.txt: src/code/%.xq
 		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
 	 catch
 	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
-	 end.' | tee $@
+	 end.' | sed 's/"//g' | tee $@
 	grep -q :Info: $@
 	fi
 
@@ -109,15 +107,16 @@ _build/data/%.xq.txt: src/data/%.xq
 	then
 	echo '##[ $< ]##'
 	podman cp $< xq:/home/
-		podman exec xq xqerl eval '
-		case xqerl:compile("/home/$(notdir $<)") of
-			Err when is_tuple(Err), element(1, Err) == xqError -> 
-				["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
-			Info when is_atom(Info) -> 
-				["$(<):1:I: compiled ok! "];
-				_ -> 
-				io:format(["$<:1:E: unknown error"])
-		end.' | jq -r '.[]' | tee $@
+	podman exec xq xqerl eval '
+	Res = try
+	 Mod = xqerl:compile("/home/$(notdir $<)")
+	 of
+		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
+	 catch
+	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
+	 end.' | sed 's/"//g' | tee $@
+	grep -q :Info: $@
 	fi
+
 
 

@@ -33,7 +33,7 @@ case "${#args[@]}" in
   EXT="${BASENAME##*.}"
   RESOURCE="${BASENAME%.*}"
   dash
-  URI="http://localhost:8081/db/${DIRNAME}/${RESOURCE}"
+  URI="http://localhost/db/${DIRNAME}/${RESOURCE}"
   echo ${URI}
   # use extension
   case ${EXT} in

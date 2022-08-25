@@ -5,7 +5,8 @@ args=("$@")
 BaseName=$(basename "${BASH_SOURCE[0]}")
 source .env
 CURL="ghcr.io/grantmacken/podx-curl:${CURL_VER}"
-CRL="podman run --rm --pod ${POD} ${CURL} --silent --show-error --connect-timeout 1 --max-time 2 " 
+#CRL="podman run --rm --pod ${POD} ${CURL} --silent --show-error --connect-timeout 1 --max-time 2 " 
+CRL="curl --silent --show-error --connect-timeout 1 --max-time 2 " 
 
 function msg() {
   echo >&2 -e "${1-}"
@@ -21,9 +22,12 @@ function die() {
 case "${#args[@]}" in
 1)
   SRC=src/data/$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
-  URI="http://localhost:8081/db/$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')"
+  URI="http://localhost/db/$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')"
   [ -d  $SRC ] || die "$SRC: NOT a file "
   echo "##[ $URI ]##"
+  #curl --silent --show-error --connect-timeout 1 --max-time 2 \
+  #  --header "Accept: text/plain" \
+  # $URI
 	${CRL}	--header "Accept: text/plain" $URI
   echo
   ;;

@@ -26,9 +26,8 @@ _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-database:
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) ## xqerl-db: store xdm data items into db on remote xq container
 
-.PHONY: data-list
-data-list: ## xqerl-db: list db items
-	$(call Dump,$(SCHEME),$(DOMAIN),/db/)
+
+	
 
 .PHONY: data-list-remote
 data-list-remote: ## xqerl-db: list db items on remote xq container
@@ -54,17 +53,24 @@ data-clean:
 	echo '##[ $@ ]##'
 	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
+
+.PHONY: data-list
+data-list: ## xqerl-db: list db items
+	curl --header "Accept: text/plain" http://localhost/db/$(DOMAIN)
+
 .PHONY: data-domain-list
 data-domain-list:
 	echo '##[ $@ ]##' #&#10
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DNS_DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | jq -r '.'
+	echo $(DOMAIN)
+	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | 
+	jq -r '.' 2>/dev/null || true
 
 .PHONY: data-in-pod-list
 data-in-pod-list:
 	$(DASH)
 	podman run  --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
-		https://$(DNS_DOMAIN)/db
+		http://localhost/db/$(DOMAIN)
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -91,7 +97,6 @@ _build/data/%.xml: src/data/%.md
 	echo "xqerl database: new cmark XML from markdown source"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
-	echo && $(DASH)
 	cat $< |
 	podman run --rm --interactive $(CMARK) |
 	sed -e '1,2d' > $@
@@ -105,7 +110,6 @@ _build/data/%.xml: src/data/%.md
 		--output /dev/null \
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	fi
-	$(DASH)
 
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -125,8 +129,7 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Content-Type: application/xml" \
 		--data-binary @- \
 		http://localhost:8081/db/$(*)' | grep -q 204
-	$(DASH)
-	else 
+	else
 	echo ' - item not found'
 	echo "xqerl database: cmark XML from markdown"
 	echo 'collection: http://$(dir $(*))'
@@ -168,7 +171,6 @@ _build/data/%.xml: src/data/%.xml
 	echo "xqerl database: new XML from source"
 	echo 'collection: http://$(dir $(*))'
 	echo 'resource: $(basename $(notdir $<))'
-	echo && $(DASH)
 	cat $< |
 	podman run --rm  --pod $(POD) --interactive $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
@@ -180,7 +182,6 @@ _build/data/%.xml: src/data/%.xml
 		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
 	cp $< $@
 	fi
-	$(DASH)
 
 _build/data/%.xq: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

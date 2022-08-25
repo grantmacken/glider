@@ -4,6 +4,36 @@ The xqerl database volume contains hierarchical collections of
 1. XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
 2. link items pointing to a container file location  
 
+
+```shell
+# {scheme}://{authority} => databases
+http://example.com  => database identifier
+# {scheme}://{authority}{path} => collections or items
+http://example.com/docs  => collection identifier
+http://localhost/docs/index => item identifier
+```
+
+The xqerl app server db identifier is a URI with constituent parts
+ consisting of a scheme plus an authority and an optional path
+
+The xqerl app server can contain a collection of databases.
+Each database is identified by a URI scheme + authority
+
+ - The xqerl app server db URI identifier: `http://example.com` is a database
+ - The xqerl app server db URI identifier: `http://localhost` is another database 
+
+
+```shell
+# {scheme}://{authority}{path} => collections or items
+http://example.com/docs  => collection identifier
+http://localhost/docs/index => item identifier
+```
+
+Each database can contain a hierarchical collections of items. 
+Collections and the items in the collections are identified by a URI
+a scheme with an authority followed by a path.
+
+
 Invoking the Make target `make` will parse and load structured markup data sources 
 from the`src/data` directory into the xqerl database as XDM items. 
 
@@ -35,31 +65,40 @@ Some examples:
 ```
 src
   ├── data
-  │   └── example.com
-  │       ├── default_layout.xq => into db - stored as XDM function item
-  │       └── index.md => into db - stored as XDM document-node
+  │   ├── example.com
+  │   │   ├── default_layout.xq => into db - stored as XDM function item
+  │   │   ├── index.md => into db - stored as XDM document-node
+  │   │   └── reviews.xml => into db - stored as XDM document-node
+  │   └── localhost
+  │       └── docs
+  │           └── xqerl-database.md   => into db - stored as XDM document-node
 ```
 
 When the source file becomes a XDM item stored in the the database,
-*by convention* the database item identifier(URI) will have no extension.  
+*by convention* the database item identifier(URI) will have no extension.
 
 ```
 src
   ├── data
-  │   └── example.com
-  │       ├── default_layout.xq => db identifier: http://example.com/default_layout
-  │       └── index.md       => db identifier: http://example.com/index
+  │   ├── example.com => database identifier: http://example.com
+  │   │   ├── prices.xml => db item identifier: http://example.com/prices
+  │   │   └── reviews.xml => db item identifier: http://localhost/reviews
+  │   └── localhost =>  database identifier: http://localhost
+  │       └── docs => db collection identifier: http://localhost/docs
+  │           ├── xqerl-code.md     => db item identifier: http://localhost/docs/xqerl-code
+  │           └── xqerl-database.md  => db item identifier: http://localhost/docs/xqerl-database
 ```
 
-The db identifier is a URI with constituent parts, a scheme, an authority and a path.
-The data source will match the authority-path. pattern
+
+
+The data source will match the authority-path pattern
 
 ```
 {scheme}://{authority}{path}
 src/data/{authority}{/sub-dir-1/sub-dir-2/file}
 ```
 
-The authority part in db URI will always be a 'dns domain'.
+The authority part in db URI will always be a `dns domain`.
 The data under the 'domain' belongs-to the domain.
 
 `inc/data.mk` provides the working code for moving data from data sources into the xqerl-database volume. 
@@ -67,11 +106,11 @@ The code use the file extension to detirmine the process pipeline.
 
 
 ```
-# if extension .md then proccess with cmark
+# if extension .md then process with cmark
 src
   ├── data
   │   └── example.com
-  │       └── index.md => proccess with cmark => store as XDM document-node
+  │       └── index.md => process with cmark => store as XDM document-node
 ```
 
 Adjust this code to suite your own use cases. 

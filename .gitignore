@@ -5,7 +5,6 @@ _*
 src/proxy/conf/certificates.conf
 # src artefacts 'example.com'
 /src/code/restXQ
-/src/data/example.com
 node_modules
 package-lock.json
 package.json
