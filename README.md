@@ -1,3 +1,11 @@
+
+# NOTE: 
+
+This project is under development.
+ The basic ideas are there but I am still changing stuff. 
+ When I think it is ready I will tag a release version.
+
+
 # [xqerl glider](https://en.wikipedia.org/wiki/Squirrel_glider)
 
 >  Not to be confused with the Flying Squirrel.
@@ -261,6 +269,3 @@ podman top xq
 # see what resource are being used in our pod
 podman stats --no-stream
 ```
-
-
-

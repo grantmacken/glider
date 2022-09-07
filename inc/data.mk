@@ -53,6 +53,10 @@ data-clean:
 	echo '##[ $@ ]##'
 	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
+.PHONY: data-list-all
+data-list-all: ## xqerl-db: list db items
+	podman exec xq xqerl eval "xqerl:run(\"uri-collection('http://localhost/nowhere')\")." || true
+	# podman exec xq xqerl eval "xqerl:run(\"uri-collection(())\")." || true
 
 .PHONY: data-list
 data-list: ## xqerl-db: list db items

@@ -171,13 +171,14 @@ a {
   a:visited {
     color: var(--blue4); 
 }
-
+/*
 pre, code {
   font-family: var( --code-font);
   color: var(--dark2);
   background: var(--light2);
   font-size: smaller;
 }
+*/
 
 
 /* TABLES */

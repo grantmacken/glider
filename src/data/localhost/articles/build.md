@@ -8,7 +8,7 @@ the glider project generates some base boilerplate files for the 'example.com' d
 
 A local development build cycle will consists of:
  1. **editing** source files located in the src directory
- 2. **building** by running `make` which stores build-target results into appropiate container volumes
+ 2. **building** by running `make` which stores build-target results into appropriate container volumes
  3. **checking** the build which is site reachable at your development dns domain e.g. http://example.com.
 
 A tree view of the src folder reflects what gets stored into the respective container volumes.

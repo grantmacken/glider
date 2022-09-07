@@ -8,9 +8,6 @@ The xqerl database volume contains hierarchical collections of
 ```shell
 # {scheme}://{authority} => databases
 http://example.com  => database identifier
-# {scheme}://{authority}{path} => collections or items
-http://example.com/docs  => collection identifier
-http://localhost/docs/index => item identifier
 ```
 
 The xqerl app server db identifier is a URI with constituent parts
@@ -31,13 +28,26 @@ http://localhost/docs/index => item identifier
 
 Each database can contain a hierarchical collections of items. 
 Collections and the items in the collections are identified by a URI
-a scheme with an authority followed by a path.
 
+When we retrieve a resource as identified by a db item URI we get a XDM item.
+
+Any represention/view of the retrieved XDM item instance may differ depending on how we serialize the XDM instance.
+Using XQuery the serialization of the XDM item can output XML, HTML, XHTML, JSON or Text as defined in the 
+[XSLT and XQuery Serialization 3.1](https://www.w3.org/TR/xslt-xquery-serialization-31/#intro) document.
+
+
+The XQuery implementation in the xqerl XQuery application server provides the following ways to work with XDM data 
+ stored in xqerl database collections.
+
+ 1. [XPath and XQuery Functions and Operators 3.1](https://www.w3.org/TR/xpath-functions-31/) 
+ 2. [XQuery Update Facility 3.0](https://www.w3.org/TR/xquery-update-30/) 
+ 3. [XQuery Database Module](https://github.com/zadean/xqerl/blob/06c651ec832d0ac2b77bef92c1b4ab14d8da8883/src/xqerl_mod_db.erl) 
+
+
+## Building From Data Sources
 
 Invoking the Make target `make` will parse and load structured markup data sources 
 from the`src/data` directory into the xqerl database as XDM items. 
-
-## Building From Data Sources
 
 Structured markup data sources are parsed and loaded into the xqerl database as [XDM](https://www.w3.org/TR/xpath-datamodel-31) items
 These XDM database items include document-nodes, maps, arrays, and even functions.
@@ -75,7 +85,7 @@ src
 ```
 
 When the source file becomes a XDM item stored in the the database,
-*by convention* the database item identifier(URI) will have no extension.
+[by convention](https://www.w3.org/Provider/Style/URI) the database item identifier(URI) will have no extension.
 
 ```
 src
@@ -88,6 +98,8 @@ src
   │           ├── xqerl-code.md     => db item identifier: http://localhost/docs/xqerl-code
   │           └── xqerl-database.md  => db item identifier: http://localhost/docs/xqerl-database
 ```
+
+
 
 
 
