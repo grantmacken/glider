@@ -93,8 +93,8 @@ clean: down init-clean
 	# rm artefacts from 'build' target
 	rm -fr _build
 	# rm artefacts from 'init' target
-	# rm -v src/data/$(DNS_DOMAIN)/*  || true
-	# rm -v src/code/routes/$(DNS_DOMAIN).xqm  || true
+	# rm -v src/data/$(DOMAIN)/*  || true
+	# rm -v src/code/routes/$(DOMAIN).xqm  || true
 	@systemctl --user stop pod-podx.service || true
 	@systemctl --user disable container-xq.service || true
 	@systemctl --user disable container-or.service || true
@@ -114,7 +114,7 @@ xq-up: podx
 	then
 	podman run --name xq --pod $(POD) \
 		--mount $(MountCode) --mount $(MountData) --mount $(MountAssets) \
-		--tz=$(TIMEZONE) \
+		--tz=$(shell timedatectl | grep -oP 'Time zone: \K[\w/]+') \
 		--detach $(XQ)
 	sleep 2
 	podman ps -a --pod | grep -oP '$(XQ)(.+)$$'
@@ -140,7 +140,7 @@ or-up: xq-up
 		--name or \
 		--mount $(MountProxy) \
 		--mount $(MountLetsencrypt) \
-		--tz=$(TIMEZONE) \
+		--tz=$(shell timedatectl | grep -oP 'Time zone: \K[\w/]+') \
 		--detach $(OR)
 	else
 	STATUS=$$(podman inspect -f '{{.State.Status}}' or)
@@ -270,12 +270,12 @@ journal:
 # init-clean:  data-init-clean code-init-clean
 #
 # code-init-clean: 
-# 	rm -v src/code/routes/$(DNS_DOMAIN).xqm || true
+# 	rm -v src/code/routes/$(DOMAIN).xqm || true
 #
 # data-init-clean: 
 # 	echo '##[ $@ ]##'
-# 	rm -v src/data/$(DNS_DOMAIN)/index.md || true
-# 	rm -v src/data/$(DNS_DOMAIN)/default_layout.xq || true
+# 	rm -v src/data/$(DOMAIN)/index.md || true
+# 	rm -v src/data/$(DOMAIN)/default_layout.xq || true
 #
 # src/code/routes/$(DOMAIN).xqm: export routes:=$($(SCAFFOLD)_routes)
 # src/code/routes/$(DOMAIN).xqm:
@@ -283,8 +283,8 @@ journal:
 # 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 # 	echo "$${routes}" > $@
 #
-# src/data/$(DNS_DOMAIN)/index.md: export index_md:=$(index_md)
-# src/data/$(DNS_DOMAIN)/index.md:
+# src/data/$(DOMAIN)/index.md: export index_md:=$(index_md)
+# src/data/$(DOMAIN)/index.md:
 # 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 # 	echo '##[ $(notdir $@) ]##'
 # 	echo "$${index_md}"  > $@
