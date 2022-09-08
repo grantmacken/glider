@@ -1,4 +1,21 @@
 
+WHICH_LIST := podman curl timedatectl
+assert-command-present = $(if $(shell which $1),,$(error '$1' missing and needed for this project))
+$(foreach src,$(WHICH_LIST),$(call assert-command-present,$(src)))
+
+
+POD=podx
+# image versions
+XQERL_VER=v0.1.10
+PROXY_VER=v1.21.4.1
+ALPINE_VER=v3.15.4
+W3M_VER=v0.5.3
+CURL_VER=v7.83.1
+CMARK_VER=v0.30.2
+# CSSNANO_VER=5.0.8
+# MAGICK_VER=7.0.11
+# ZOPFLI_VER=1.0.3
+# pod name
 # images-
 XQ        := ghcr.io/grantmacken/xqerl:$(XQERL_VER)
 OR        := ghcr.io/grantmacken/podx-openresty:$(PROXY_VER)
@@ -22,7 +39,7 @@ ESCRIPT := podman exec xq xqerl escript
 EVAL    := podman exec xq xqerl eval
 
 SCHEME ?= https
-DOMAIN ?= $(DNS_DOMAIN)
+DOMAIN ?= $(DOMAIN)
 ROUTE ?= /index
 Dump = podman run --pod $(POD) --rm $(W3M) -dump $(1)://$(2)$(3)
 CRL := podman run --pod $(POD) --rm  $(CURL)
@@ -59,13 +76,13 @@ curl:
 	curl --silent --show-error  \
 		--connect-timeout 1 \
 		--max-time 2 \
-		$(SCHEME)://$(DNS_DOMAIN)$(ROUTE)
+		$(SCHEME)://$(DOMAIN)$(ROUTE)
 	echo && $(DASH)
 
 .PHONY: hosts
 hosts:
-	grep -q '127.0.0.1   $(DNS_DOMAIN)' /etc/hosts || 
-	echo '127.0.0.1   $(DNS_DOMAIN)' |
+	grep -q '127.0.0.1   $(DOMAIN)' /etc/hosts || 
+	echo '127.0.0.1   $(DOMAIN)' |
 	sudo tee -a /etc/hosts
 	$(DASH)
 	cat  /etc/hosts
@@ -73,7 +90,7 @@ hosts:
 
 .PHONY: hosts-remove
 hosts-remove:
-	sudo sed -i '/127.0.0.1   $(DNS_DOMAIN)/d' /etc/hosts
+	sudo sed -i '/127.0.0.1   $(DOMAIN)/d' /etc/hosts
 	cat  /etc/hosts
 
 
