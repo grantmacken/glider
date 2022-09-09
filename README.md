@@ -67,9 +67,9 @@ Engine virtual machine instance
 ## Getting Started
 
 1. clone this repo and cd into the cloned dir
-2. [enable rootless](./docs/on_rootlessness.md) in order to sever on port 80 and above
+2. [enable rootless](./articles/on_rootlessness.md) in order to sever on port 80 and above
 3. bring the [podman pod](https://docs.podman.io/en/latest/markdown/podman-pod.1.html) up with two running containers
- 1. 'or' container: nginx as a [reverse proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy)
+ 1. 'or' container: nginx as a reverse-proxy <!--[reverse proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy) -->
  2. 'xq' container: the xqerl application
 
 ```shell
@@ -82,6 +82,9 @@ make up
 If you see the 'You are now flying xqerl' 
 you know the pod is running and in the pod nginx is acting as a 
 reverse proxy for the xqerl XQuery application server.
+
+We bring the pod up by running `make up` 
+and conversely by running `make down` we stop the the running containers.
 
 ## Podman Status Commands 
 
@@ -96,25 +99,6 @@ podman top xq
 # see what host resource are being used in our pod
 podman stats --no-stream
 ```
-
-## Up and Down With the .env file
-
-We bring the pod up by running `make up` 
-and conversely by running `make down` we stop the the running containers.
-
-When running `make up` **make** will read from the `.env` file where it will pick up
-container *runtime* variables. The .env file contains these keys.
-
- **TIMEZONE**: XQuery has rich set of functions and operators for 
-dates, times and durations. This needs to be adjusted to your timezone, otherwise 
-some of these XQuery functions and operators will not work as expected.
-
-**Image Versions**:  These can be adjusted to the latest container image versions
- 
-<!-- **DNS_DOMAIN**: The intial domain in the environment file is `localhost`. -->
-<!---->
-<!-- The `DNS_DOMAIN` key allows the [switching of dns domains](./docs/dns_domains.md) -->
-<!-- so you can work with a specific DNS domain in the development environment e.g. `example.com` -->
 
 ## The Podx Pod
 
@@ -269,3 +253,41 @@ podman top xq
 # see what resource are being used in our pod
 podman stats --no-stream
 ```
+
+## Scaffold a project based on a domain
+
+A simple project scaffolding cn be built using the domain name as the projects dir.
+
+```
+bin/init
+# This will prompt you for a domain name you wish to use.
+# e.g. example.com
+# cd into the directory
+cd ../example.com
+# run make
+#  add 'example.com' to the /etc/hosts file,
+# so 'example.com can resolve locally
+make hosts
+```
+
+For conveniance we have pre-created self-signed certs for the 
+the `example.com` domain. These are already in the or container.
+```
+podman exec or ls certs
+podman exec or cat conf/self_signed.conf
+podman exec or cat conf/tls_server.conf
+```
+
+```
+#when the pod is running we can create a pem file using openssl
+make src/proxy/certs/example.com.pem
+```
+
+Follow instructions in link to [get firefox to trust your self signed certificates] (https://javorszky.co.uk/2019/11/06/get-firefox-to-trust-your-self-signed-certificates/)
+
+
+
+
+
+
+
