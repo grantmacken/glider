@@ -1,5 +1,5 @@
 
-WHICH_LIST := podman curl timedatectl
+WHICH_LIST := podman curl timedatectl openssl
 assert-command-present = $(if $(shell which $1),,$(error '$1' missing and needed for this project))
 $(foreach src,$(WHICH_LIST),$(call assert-command-present,$(src)))
 
