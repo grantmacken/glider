@@ -42,3 +42,14 @@ _build/proxy/conf/%.conf: src/proxy/conf/%.conf
 	tee $@
 
 
+src/proxy/certs/example.com.pem:
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '## $(notdir $@) ##'
+	if podman ps -a | grep -q $(OR)
+	then
+	openssl s_client -showcerts -connect example.com:443 </dev/null | sed -n -e '/-.BEGIN/,/-.END/ p' > $@
+	fi
+
+
+
+
