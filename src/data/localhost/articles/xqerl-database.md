@@ -178,7 +178,7 @@ This expression needs to run in the context of the running container instance
 
 <!--
 
-Note: The `src/data/{DNS_DOMAIN}` directory structure is just a build process convenience. 
+Note: The `src/data/{DOMAIN}` directory structure is just a build process convenience. 
 There other ways of getting data into the database and you don't have to follow 
 the 'no extension' convention.
 

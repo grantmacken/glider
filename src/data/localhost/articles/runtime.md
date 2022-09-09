@@ -1,7 +1,7 @@
 ##  Switching DNS Domains
 
 To switch development to a dns domain you control,
- change the value of the `DNS_DOMAIN` in the .env file.
+ change the value of the `DOMAIN` in the .env file.
  Next invoke the `make init` target.
  The target will create some some boilerplate src files for your dns domain.
 
@@ -23,7 +23,7 @@ Since we do not own or control the 'example.com' domain,
 we can modify our '/etc/hosts' file, so 'example.com' will resolve to 'localhost'
 
 The Make target `make hosts` will add an entry to the '/etc/hosts' file.
-The `make hosts` target uses the value of the `DNS_DOMAIN` in the .env file.
+The `make hosts` target uses the value of the `DOMAIN` in the .env file.
 Note: The target requires us to use super do `sudo` .
 The `make hosts` target is an alias for following shell script.
 
