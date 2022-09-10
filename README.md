@@ -256,7 +256,7 @@ podman stats --no-stream
 
 ## Scaffold a project based on a domain
 
-A simple project scaffolding cn be built using the domain name as the projects dir.
+A simple project scaffolding can be built using the domain name as the projects dir.
 
 ```
 bin/init
@@ -270,20 +270,65 @@ cd ../example.com
 make hosts
 ```
 
-For conveniance we have pre-created self-signed certs for the 
-the `example.com` domain. These are already in the or container.
-```
-podman exec or ls certs
-podman exec or cat conf/self_signed.conf
-podman exec or cat conf/tls_server.conf
-```
+The nginx reverse proxy configuration is set up redirect 
+request to HTTP port 80 to the sercure TLS port 433.
+This is true for any domain except the `localhost` domain or
+localhost subdomain like `erwhon.localhost`. 
+Any other domain will redirect to the TLS port 433
 
 ```
-#when the pod is running we can create a pem file using openssl
-make src/proxy/certs/example.com.pem
+#  HTTP server with redirect to port 433
+#########################################
+
+server {
+  root html;
+  index index.html;
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name ~^(www\.)?(?<domain>.+)$;
+  location = /favicon.ico {
+    log_not_found off;
+  }
+
+  # Redirect all HTTP requests to HTTPS with a 301 Moved Permanently response.
+  location / {
+    return 301 https://$http_host$request_uri;
+  }
+}
 ```
 
-Follow instructions in link to [get firefox to trust your self signed certificates] (https://javorszky.co.uk/2019/11/06/get-firefox-to-trust-your-self-signed-certificates/)
+It is preferable to use dns domains under your control.
+You can to obtain letsencrypt certs by using the letsecypt bot 
+and store these certs in our letsencrypt container volume.
+Your site does not have to be running to do this. Full instructions later. 
+
+In the meantime, you can treat something like 'example.com' as a testing playground domain.
+
+To use 'example.com' as a testing playground domain you will need self-signed certs.
+
+The easiest way to do this is via [mkcert](https://github.com/FiloSottile/mkcert)
+The installation instruction are on the [mkcert repo](https://github.com/FiloSottile/mkcert)
+After you have installed mkcert 
+
+```
+# cd into the 'example.com' dir created via `bin/init`
+# to create the self signed certs for 'example.com' run ...
+make mkcert
+# the certs will now be in the src/proxy/certs dir
+# along with the nginx conf file
+# src/proxy/conf/self_signed.conf that points to these certs 
+# To upload src files into the container run ...
+make proxy
+```
+
+Now you will have HTTP requests on the example.com domain served over the secure TLS port.
+
+```
+curl -Lv http://example.com # with -L flag follows redirects
+w3m -dump http://example.com # redirects automatically
+w3m -dump_extra http://example.com #  to see redirects
+```
+
 
 
 

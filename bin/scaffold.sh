@@ -3,12 +3,12 @@ set -euo pipefail
 read -p "Enter your domain: " DOMAIN
 read -p "Continue? (Y/N): " CONFIRM
 [[ "$CONFIRM" == [yY] ]]
-mkdir ../$DOMAIN
+mkdir -p ../$DOMAIN
 cp -v .env Makefile ../$DOMAIN/
 pushd ../$DOMAIN || exit
-ln -s ../glider/inc . 
-ln -s ../glider/bin .
-mkdir -p src/{assets,code/{escripts,routes},data/$DOMAIN,proxy/{certs,proxy}}
+ln -sf ../glider/inc . 
+ln -sf ../glider/bin .
+mkdir -p src/{assets,code/{escripts,routes},data/${DOMAIN},proxy/{certs,conf}}
 touch .gitignore && echo '_*' > .gitignore
 cat <<EOF | tee src/code/routes/${DOMAIN}.xqm
 module namespace _ = 'http://${DOMAIN}/#routes';
@@ -19,7 +19,7 @@ declare
 %output:method('html')
 function _:index(){
 <html>
-  <head><title>${DOMAIN}/title></head>
+  <head><title>${DOMAIN}</title></head>
   <body>Hello World!</body>
 </html>
 };
