@@ -3,6 +3,7 @@ _*
 .secrets
 # src artefacts created by make
 src/proxy/conf/certificates.conf
+src/proxy/certs/*
 # src artefacts 'example.com'
 /src/code/restXQ
 node_modules
