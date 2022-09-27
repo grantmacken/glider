@@ -1,2 +1,2 @@
-declare variable $arg external;
-``[ `{$arg}` rock n roll will never die ]``
+
+``[ hey hey my my rock n roll will never die ]``

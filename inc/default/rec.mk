@@ -53,7 +53,6 @@ rec-xqerl-as-a-service:
 	echo '# -------------------------------------------------------------------- '
 
 
-
 .PHONY: rec-xqerl-up-and-flying
 rec-xqerl-up-and-flying:
 	echo '# Xqerl pronounced 'squirrel', is a xQuery 3.1 application server. ' | pv -qL 7

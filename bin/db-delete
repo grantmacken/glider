@@ -2,6 +2,11 @@
 set -Eeuo pipefail
 declare -a args
 args=("$@")
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+source .env
+CURL="ghcr.io/grantmacken/podx-curl:${CURL_VER}"
+CRL="podman run --rm --pod podx ${CURL} --silent --show-error -X DELETE --dump-header - "
 
 function dash {
   printf %60s | tr ' ' '-' && echo
@@ -12,7 +17,7 @@ function msg() {
 }
 
 function die() {
-  local msg=$(echo -n "✘  " && echo $1)
+  local msg=$(echo -n '✘  ' && echo $1)
   local code=${2-1} # default exit status 1
   msg "$msg"
   exit "$code"
@@ -20,14 +25,16 @@ function die() {
 
 case "${#args[@]}" in
 1)
-  SRC=src/data/$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
-  URI="http://localhost:8081/db/$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')"
-  # [ -f  $SRC ] || die "$SRC: NOT a file "
-  echo "##[ $URI ]##"
-	curl -s --show-error \
-    --dump-header - \
-		-X DELETE \
-		$URI
+  BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
+  SRC="src/data/$BASE"
+  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  DIRNAME=$(dirname ${BASE})
+  BASENAME=$(basename ${BASE})
+  # EXT="${BASENAME##*.}"
+  RESOURCE="${BASENAME%.*}"
+  URI="http://localhost:8081/db/${DIRNAME}/${RESOURCE}"
+  echo "##[ ${URI} ]##"
+  ${CRL} "${URI}"
   ;;
 *)
   die "Usage: $(basename "${BASH_SOURCE[0]}") [src] 1 arg required" 
@@ -35,45 +42,4 @@ case "${#args[@]}" in
 esac
 
 
-case "${#args[@]}" in
-1)
-  BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
-  SRC="src/data/$BASE"
-  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
-  DIRNAME=$(dirname $BASE)
-  BASENAME=$(basename $BASE)
-  EXT="${BASENAME##*.}"
-  RESOURCE="${BASENAME%.*}"
-  dash
-  URI="http://localhost:8081/db/${DIRNAME}/${RESOURCE}"
-  echo ${URI}
-  # use extension
-  case ${EXT} in
-  json)
-    dash
-  ;;
-  xml)
-  dash
-  ;;
-  md)
-   dash
-	 curl -s --show-error \
-    --dump-header - \
-		-X DELETE \
-		$URI
-    BUILD_HEADER="_build/data/$BASE"
-     bin/db-available $SRC &>/dev/null || rm -f ${BUILD_HEADER}.headers
-  ;;
-  xq)
-    dash
-  ;;
-  *)
-    die " [ ${EXT} ] can not handle extension "
-    ;;
-  esac
-  ;;
-*)
-  die "Usage: $(basename "${BASH_SOURCE[0]}") [src] 1 arg required"
-  ;;
-esac
 

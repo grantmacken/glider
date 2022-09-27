@@ -8,7 +8,8 @@ cp -v .env Makefile ../$DOMAIN/
 pushd ../$DOMAIN || exit
 ln -sf ../glider/inc . 
 ln -sf ../glider/bin .
-mkdir -p src/{assets,code/{escripts,routes},data/${DOMAIN},proxy/{certs,conf}}
+mkdir -p src/{assets/${DOMAIN},code/{routes,main_modules,library_modules,escripts},data/${DOMAIN},proxy/{certs,conf}}
+# ln -sr -t ./src/code/  ../glider/src/code/escripts
 touch .gitignore && echo '_*' > .gitignore
 cat <<EOF | tee src/code/routes/${DOMAIN}.xqm
 module namespace _ = 'http://${DOMAIN}/#routes';

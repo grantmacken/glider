@@ -10,14 +10,30 @@ xmlList  := $(call rwildcard,src/data,*.xml)
 xqList  :=  $(call rwildcard,src/data,*.xq)
 
 mdBuild := $(patsubst src/%.md,_build/%.xml,$(mdList))
-jsonBuild := $(patsubst src/%,_build/%.headers,$(jsonList))
+jsonBuild := $(patsubst src/%.json,_build/%.json,$(jsonList))
 xmlBuild := $(patsubst src/%,_build/%,$(xmlList))
 xqBuild := $(patsubst src/%,_build/%,$(xqList))
 
 .PHONY: data
 data: _deploy/xqerl-database.tar
 
-_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-database: store XDM data items into db
+.PHONY: data-json
+data-json: $(jsonBuild)
+
+.PHONY: data-xml
+data-xml: $(xmlBuild)
+
+.PHONY: data-md
+data-md: $(mdBuild)
+
+.PHONY: data-xq
+data-xq: $(xqBuild)
+
+.PHONY: data-xq-clean
+data-xq-clean: 
+	rm -vf $(xqBuild)
+
+_deploy/xqerl-database.tar: $(mdBuild)  # $(xmlBuild) $(xqBuild) ## xqerl-db: store XDM data items into db
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	podman pause xq &>/dev/null
 	podman volume export xqerl-database > $@
@@ -25,10 +41,6 @@ _deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-database:
 
 .PHONY: data-deploy
 data-deploy: $(patsubst _build/data/%,_deploy/data/%,$(xqBuild) $(xqBuild)) ## xqerl-db: store xdm data items into db on remote xq container
-
-
-	
-
 .PHONY: data-list-remote
 data-list-remote: ## xqerl-db: list db items on remote xq container
 	$(Gcmd) '$(call Dump,$(SCHEME),$(DOMAIN),/db/)'
@@ -51,69 +63,47 @@ data-reset: service-stop volumes-remove-xqerl-database volumes data-clean servic
 .PHONY: data-clean
 data-clean:
 	echo '##[ $@ ]##'
-	rm -f $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
-
-.PHONY: data-list-all
-data-list-all: ## xqerl-db: list db items
-	podman exec xq xqerl eval "xqerl:run(\"uri-collection('http://localhost/nowhere')\")." || true
-	# podman exec xq xqerl eval "xqerl:run(\"uri-collection(())\")." || true
+	rm -fv $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
 
 .PHONY: data-list
-data-list: ## xqerl-db: list db items
-	curl --header "Accept: text/plain" http://localhost/db/$(DOMAIN)
-
-.PHONY: data-domain-list
-data-domain-list:
-	echo '##[ $@ ]##' #&#10
-	echo $(DOMAIN)
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(DOMAIN)' => uri-collection() => string-join('&#10;')\"))." | 
-	jq -r '.' 2>/dev/null || true
+data-list: ## xqerl-db: list all database collections and items
+	$(ESCRIPT) code/escripts/list-data.escript
 
 .PHONY: data-in-pod-list
 data-in-pod-list:
 	$(DASH)
-	podman run  --rm --pod $(POD) $(CURL) \
+	podman run --rm --pod $(POD) $(CURL) \
 		--silent --show-error --connect-timeout 1 --max-time 2 \
-		http://localhost/db/$(DOMAIN)
+		http://localhost:8081/db/$(DOMAIN)
+	echo
+
+_build/data/%.xq: src/data/%.xq
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $< ]##'
+	$(ESCRIPT) code/escripts/db-store-xdm.escript 'http://$*' '$(shell base64 $<)'
+	$(EXEC) cat '/home/tmp.xq' > $@
+
+_build/data/%.json: src/data/%.json
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	# echo '##[ $(*) ]##'
+	if bin/db-available $<
+	then
+	bin/db-update $< | grep -q '204'
+	else
+	 bin/db-create $< | grep -q '201'
+	fi
+	bin/db-retrieve $< > $@
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(*) ]##'
-	if podman run --rm --pod $(POD) $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-		-I --header "Accept: application/xml" \
-		http://localhost:8081/db/$(*) | grep -q '200'
+	echo '##[ $(<) ]##'
+	if bin/db-available $<
 	then
-	echo "xqerl database: update cmark XML from markdown source"
-	cat $< |
-	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' > $@
-	cat $@ |
-	podman run --rm  --pod $(POD) --interactive $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-    -X PUT \
-		--header "Content-Type: application/xml" \
-		--data-binary @- \
-		http://localhost:8081/db/$(*) | grep -q '204'
+	bin/db-update $< | grep -q '204'
 	else
-	echo "xqerl database: new cmark XML from markdown source"
-	echo 'collection: http://$(dir $(*))'
-	echo 'resource: $(basename $(notdir $<))'
-	cat $< |
-	podman run --rm --interactive $(CMARK) |
-	sed -e '1,2d' > $@
-	cat $@ |
-	podman run --rm  --pod $(POD) --interactive $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-		--header "Content-Type: application/xml" \
-		--header "Slug: $(basename $(notdir $<))" \
-		--data-binary @- \
-		--output /dev/null \
-		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
+	bin/db-create $< | grep -q '201'
 	fi
+	bin/db-retrieve $< > $@
 
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -187,49 +177,9 @@ _build/data/%.xml: src/data/%.xml
 	cp $< $@
 	fi
 
-_build/data/%.xq: src/data/%.xq
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	if podman ps -a | grep -q $(XQ)
-	then
-	echo '##[ $(notdir $<) ]##'
-	echo " - db XDM item: function"
-	echo ' - collection:  http://$(dir $(*))'
-	echo ' - resource:    $(basename $(notdir $<))'
-	podman cp $< xq:/home/
-	# a compile check
-	podman exec xq xqerl eval '
-	case xqerl:compile("/home/$(notdir $<)") of
-		Err when is_tuple(Err), element(1, Err) == xqError ->
-			["$<:",integer_to_list(element(2,element(5,Err))),":E: ",binary_to_list(element(3,Err))];
-		Mod when is_atom(Mod) ->
-			["$<:1:I: compiled ok! "];
-			_ ->
-			["$<:1:E: unknown error"]
-			end.' | grep -q ':I:'
-	# copy main module into container
-	podman cp src/code/db-store.xq xq:/home/
-	# echo -n ' - db function item stored: '
-	podman exec xq xqerl eval '
-	Arg1 = list_to_binary("/home/$(notdir $<)"),
-	Arg2 = list_to_binary("http://$(dir $(*))$(basename $(notdir $<))"),
-	Args = #{<<"src">> => Arg1, <<"uri">> => Arg2},
-	case xqerl:compile("/home/db-store.xq") of
-		Mod when is_atom(Mod) ->
-		case Mod:main(Args) of
-			Bin when is_binary(Bin) ->
-			  File = "/home/$(shell echo $(*) | sed 's%/%_%' ).xq",
-				file:write_file(File,binary_to_list(Bin)),
-				xqerl:run(xqerl:compile(File))
-				;
-			_ -> false
-		end;
-		_ -> false
-		end.' | grep -q true
-	podman exec xq xqerl eval "binary_to_list(xqerl:run(\"'http://$(dir $(*))' => uri-collection() => string-join('&#10;')\"))." |
-	jq -r '.' | 
-	grep -q 'http://$(dir $(*))$(basename $(notdir $<))'
-	podman exec xq cat "/home/$(shell echo $(*) | sed 's%/%_%' ).xq" > $@
-	fi
+
+
+
 
 _deploy/data/%.xq: _build/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

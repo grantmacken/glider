@@ -3,21 +3,13 @@
 %%! -setcookie monster
 -define(SELF_NODE, list_to_atom( "compile_" ++ integer_to_list(rand:uniform(16#FFFFFFFFF)) ++ "@127.0.0.1")).
 % {xqError, "-record(xqError,{name,description,value,location,additional})."}
--record(xqError, {
-    name,
-    description = [],
-    value = [],
-    % {Module, Line, Column}
-    location = undefined,
-    additional = []
-}).
 %
 
-formatError(Source, E) -> 
-Msg = E#xqError.description,
-Line = integer_to_list(element(2,E#xqError.location)),
-%io:format("~p~n" , [ E#xqError.location]).
+formatError(Source, Err) -> 
+Msg = binary_to_list(element(3,Err)),
+Line = integer_to_list(element(2,element(5,Err))),
 io:format("src/~s:~s:Error: ~s ~n" , [ Source, Line, Msg ]).
+  
 
 main([Source]) ->
    {ok, _} = net_kernel:start([?SELF_NODE, longnames]),
@@ -27,8 +19,12 @@ main([Source]) ->
                     compile,
                     [Source],
                     Timeout) of
-    I when is_atom(I) -> io:format("src/~s:1:Info: compiled ok! ~s ~n" , [ Source, I]);
-    E when is_record(E, xqError) -> formatError(Source, E) 
+    Err when is_tuple(Err) -> formatError(Source, Err); 
+    Mod when is_atom(Mod) -> 
+         rpc:call( 'xqerl@127.0.0.1',
+                   xqerl,
+                   run,
+                   [Mod])
  catch 
     error:_ErrReason -> io:format("RPC ERROR: ~p ~n" , [ _ErrReason ]);
     exit:_ExitReason -> io:format("RPC EXIT: ~p ~n" , [  _ExitReason ])

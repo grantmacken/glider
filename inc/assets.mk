@@ -35,6 +35,12 @@ assets-volume-reset: service-stop \ ## static-assets: reset static-assets volume
 	service-start
 	echo '##[ $@ ]##'
 
+.PHONY: assets-list
+assets-list:
+	echo '##[ $@ ]##'
+	podman run --rm  --mount $(MountAssets) --entrypoint "sh" $(XQ) \
+		-c 'ls -R priv/static/assets'
+
 .PHONY: assets-clean
 assets-clean:
 	echo '##[ $@ ]##'

@@ -23,9 +23,10 @@ This project uses a xqerl container image, so you do not need to locally install
 
 ## Project Aims
 
-We will be setting up a **local** dockerized XQuery web application development environment.
-
-The XQuery web applications will run in a [podman](https://podman.io/) pod and consist of 2 named containers
+We will be setting up a [XQuery](https://en.wikipedia.org/wiki/XQuery) web application server and provide
+a local XQuery web application development environment.
+The XQuery web applications will run in a [podman](https://podman.io/) pod name podx.
+The podx pod will consist of 2 named containers
  1. 'or' container: a nginx reverse proxy server based on [openresty](https://openresty.org/en/)
  2. 'xq' container: running the xqerl application
 
@@ -111,7 +112,6 @@ In our [podman pod](https://developers.redhat.com/blog/2019/01/15/podman-managin
    With our own dns domains nginx will also be the
     - proxy TLS termination point
     - proxy cache server
-
 
 ### Runtime Container Volume Mounts
 
@@ -254,6 +254,8 @@ podman top xq
 podman stats --no-stream
 ```
 
+
+
 ## Scaffold a project based on a domain
 
 A simple project scaffolding can be built using the domain name as the projects dir.
@@ -289,7 +291,6 @@ server {
   location = /favicon.ico {
     log_not_found off;
   }
-
   # Redirect all HTTP requests to HTTPS with a 301 Moved Permanently response.
   location / {
     return 301 https://$http_host$request_uri;
@@ -303,11 +304,10 @@ and store these certs in our letsencrypt container volume.
 Your site does not have to be running to do this. Full instructions later. 
 
 In the meantime, you can treat something like 'example.com' as a testing playground domain.
-
 To use 'example.com' as a testing playground domain you will need self-signed certs.
 
 The easiest way to do this is via [mkcert](https://github.com/FiloSottile/mkcert)
-The installation instruction are on the [mkcert repo](https://github.com/FiloSottile/mkcert)
+The install instructions are on the [mkcert repo](https://github.com/FiloSottile/mkcert)
 After you have installed mkcert 
 
 ```
@@ -330,7 +330,9 @@ w3m -dump_extra http://example.com #  to see redirects
 ```
 
 
+## tared volume backups and restoring volumes
 
+## removing podx and build and deploy artefacts
 
 
 

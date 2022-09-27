@@ -7,11 +7,10 @@ declare
 %rest:GET
 %rest:produces('text/html')
 %output:method('html')
-function _:localhost_index(){
+function _:index(){
 try {
   let $dbBase := request:scheme() || ':/'
   let $domain := tokenize(request:path(),'/')[2]
-  
   let $dbDocURI :=  $dbBase || request:path()
   let $dbDoc :=  
     if ( $dbDocURI => doc-available() )
@@ -19,15 +18,7 @@ try {
     else error( QName(
       'http://localhost', 'NO_DOCUMENT' ),
       ``[ Could not resolve document URI: `{$dbDocURI}` ]``)
-
   let $dbCollectionURI :=  $dbBase || '/' || $domain
-  let $dbResponseHeaderURI := $dbCollectionURI  || '/response_header'
-  let $dbResponseHeaderConstructor :=
-      if ( $dbResponseHeaderURI =  uri-collection($dbCollectionURI) ) 
-      then $dbResponseHeaderURI => db:get()
-      else error( QName( 'http://localhost', 'NO_RESPONSE_HEADER_FUNCTION' ), 
-                         ``[ Could not resolve response header URI: `{$dbResponseHeaderURI}` ]``)
-
   let $dbLayoutURI := $dbCollectionURI  || '/layout'
   let $dbLayoutConstructor := 
     if ( $dbLayoutURI =  uri-collection($dbCollectionURI) ) 
@@ -40,7 +31,7 @@ try {
               cmark:frontmatter() =>
               map:put( 'content',$dbDoc => cmark:dispatch()   )
   return (
-  $dbResponseHeaderConstructor(map { 'status': '200', 'message': 'OK' } ),
+  _:response_header(map { 'status': '200', 'message': 'OK' } ),
   $dbLayoutConstructor( $Map )
  )
   } catch * {
@@ -54,7 +45,7 @@ declare
   %rest:GET
   %rest:produces('text/html')
   %output:method('html')
-function _:localhost_articles( $ITEM ){
+function _:articles( $ITEM ){
 try {
   let $dbBase := request:scheme() || ':/'
   let $domain := tokenize(request:path(),'/')[2]
@@ -68,13 +59,6 @@ try {
       ``[ Could not resolve document URI: `{$dbDocURI}` ]``)
 
   let $dbCollectionURI :=  $dbBase || '/' || $domain
-  let $dbResponseHeaderURI := $dbCollectionURI  || '/response_header'
-  let $dbResponseHeaderConstructor :=
-      if ( $dbResponseHeaderURI =  uri-collection($dbCollectionURI) ) 
-      then $dbResponseHeaderURI => db:get()
-      else error( QName( 'http://localhost', 'NO_RESPONSE_HEADER_FUNCTION' ), 
-                         ``[ Could not resolve response header URI: `{$dbResponseHeaderURI}` ]``)
-
   let $dbLayoutURI := $dbCollectionURI  || '/layout'
   let $dbLayoutConstructor := 
     if ( $dbLayoutURI =  uri-collection($dbCollectionURI) ) 
@@ -87,7 +71,7 @@ try {
               cmark:frontmatter() =>
               map:put( 'content',$dbDoc => cmark:dispatch()   )
   return (
-  $dbResponseHeaderConstructor(map { 'status': '200', 'message': 'OK' } ),
+  _:response_header( map { 'status': '200', 'message': 'OK' } ),
   $dbLayoutConstructor( $Map )
  )
   } catch * {
@@ -116,3 +100,13 @@ element html {
   }
 }
 )};
+
+declare function _:response_header( $Map as map(*)) {
+element rest:response {
+  element http:response {
+  attribute status { $Map?status },
+  attribute message {$Map?message },
+  element http:header {
+    attribute name {'Content-Type'},
+    attribute value {'text/html'}}}}
+};

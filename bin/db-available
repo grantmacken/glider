@@ -5,8 +5,6 @@ args=("$@")
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 source .env
-CURL="ghcr.io/grantmacken/podx-curl:${CURL_VER}"
-CRL="podman run --rm --pod ${POD} ${CURL} --silent --show-error --connect-timeout 1 --max-time 2 " 
 
 function dash {
   printf %60s | tr ' ' '-' && echo
@@ -27,33 +25,49 @@ case "${#args[@]}" in
 1)
   BASE=$(echo $1 | grep -oP '^(src/data/)?\K(.+)$')
   SRC="src/data/$BASE"
-  [ -f $SRC ] || die "[ $SRC ]: NOT a file "
+  # [ -f $SRC ] || die "[ $SRC ]: NOT a file "
   DIRNAME=$(dirname $BASE)
   BASENAME=$(basename $BASE)
   EXT="${BASENAME##*.}"
   RESOURCE="${BASENAME%.*}"
-  dash
-  URI="http://localhost/db/${DIRNAME}/${RESOURCE}"
-  echo ${URI}
+  DB='http://localhost:8081/db'
+  URI="${DB}/${DIRNAME}/${RESOURCE}"
+  #echo "##[ available:  $BASE ]##"
+  # echo "##[ avaialable:  $URI ]##"
   # use extension
   case ${EXT} in
+  csv)
+    ${CRL}
+  ;;
   json)
-    echo "collection: $URI "
-    dash
-    echo 'TODO'
+    podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/json" \
+		$URI | grep -q '200'
   ;;
   xml)
-  dash
-	${CRL} --header "Accept: application/xml" $URI
+     podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/xml" \
+		$URI | grep -q '200'
   ;;
   md)
-   dash
-   echo "$( ${CRL}  \
-      -I \
-      --header "Accept: application/xml" \
-      $URI)" | 
-      grep -oP 'HTTP/1.1 200 \KOK' || die "[ ${URI} ] unavaiable"
+     podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/xml" \
+		$URI | grep -q '200'
   ;;
+  csv)
+     podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+		--silent --show-error --connect-timeout 1 --max-time 2 \
+		--write-out '%{http_code}' --output /dev/null \
+		-I --header "Accept: application/json" \
+		$URI
+  ;;
+
   xq)
     dash
     echo 'TODO'

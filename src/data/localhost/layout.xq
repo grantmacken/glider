@@ -1,4 +1,3 @@
-
 function($Map as map(*)) as element() {
 element html {
   attribute lang {'en'},
