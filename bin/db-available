@@ -67,11 +67,6 @@ case "${#args[@]}" in
 		-I --header "Accept: application/json" \
 		$URI
   ;;
-
-  xq)
-    dash
-    echo 'TODO'
-  ;;
   *)
     die " [ ${EXT} ] can not handle extension "
     ;;

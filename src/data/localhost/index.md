@@ -2,7 +2,6 @@
  title: xqerl glider docs
 -->
 
-## Introduction
 
 The [squirrel glider](https://en.wikipedia.org/wiki/Squirrel_glider) not to be confused with the flying squirrel, is a nocturnal gliding possum that
 lives amongst the trees of Australia.
@@ -17,8 +16,9 @@ The xqerl glider project aim is to help you set up data driven web applications 
 
  - [running xqerl as a service](articles/as-a-service)
  - [volumes in the container pod](articles/volumes)
- - [the development build cycle](articles/as-a-service)
+ - [the development build cycle](articles/build)
  - [xqerl application databases](articles/xqerl-database)
+ - [XQuery data from markup sources](articles/parsed-data-from-sources)
  - [XQuery code in xqerl](articles/xqerl-code)
  - [application static assets](articles/static-assets)
 

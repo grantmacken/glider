@@ -47,19 +47,22 @@ case "${#args[@]}" in
 		--header "Content-Type: application/json" \
 		--data-binary @- \
 		--output /dev/null \
-		${URI} | grep -q 204
+		${URI}
     ;;
   xml)
   echo "collection: $URI "
     # use xmllint to check if doc wellformed
     xmllint $SRC &>/dev/null || die " [ $SRC  ] invalid XML: not well formed"
-    curl --silent --show-error --connect-timeout 1 --max-time 2 \
-      -X PUT \
-      --dump-header - \
-      --output /dev/null \
-      --header "Content-Type: application/xml" \
-      --data-binary @${SRC} \
-      ${URI}
+    xmllint --nowarning --c14n $SRC |
+    podman run --rm --pod podx \
+        --interactive ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+        --silent --show-error --connect-timeout 1 --max-time 2 \
+        --write-out '%{http_code}' --output /dev/null \
+        --header "Content-Type: application/xml" \
+        --data-binary @- \
+        --output /dev/null \
+        -X PUT \
+        ${URI}
     ;;
   md)
   echo "collection: ${URI} "
@@ -70,14 +73,14 @@ case "${#args[@]}" in
       --validate-utf8 \
       --safe \
       --smart 2>/dev/null |
-    sed -e '1,2d' |
+    xmllint --nowarning --dropdtd --c14n - |
     podman run --rm --pod podx \
       --interactive ghcr.io/grantmacken/podx-curl:${CURL_VER} \
       --silent --show-error --connect-timeout 1 --max-time 2 \
       --write-out '%{http_code}' --output /dev/null \
       --header "Content-Type: application/xml" \
-      -X PUT \
       --data-binary @- \
+      -X PUT \
       "${URI}"
     ;;
   xq)

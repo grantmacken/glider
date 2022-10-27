@@ -1,8 +1,11 @@
-#  xqerl database 
+ <!--
+ title: The xqerl database
+ -->
 
 The xqerl database volume contains hierarchical collections of 
 1. XDM items as defined in the [XQuery and XPath Data Model](https://www.w3.org/TR/xpath-datamodel-31).
-2. link items pointing to a container file location  
+2. unparsed text items.   
+3. link items pointing to a file location  
 
 
 ```shell
@@ -72,7 +75,7 @@ Some examples:
 
  Our example data sources
 
-```
+```shell
 src
   ├── data
   │   ├── example.com
@@ -87,7 +90,7 @@ src
 When the source file becomes a XDM item stored in the the database,
 [by convention](https://www.w3.org/Provider/Style/URI) the database item identifier(URI) will have no extension.
 
-```
+```shell
 src
   ├── data
   │   ├── example.com => database identifier: http://example.com
@@ -98,10 +101,6 @@ src
   │           ├── xqerl-code.md     => db item identifier: http://localhost/docs/xqerl-code
   │           └── xqerl-database.md  => db item identifier: http://localhost/docs/xqerl-database
 ```
-
-
-
-
 
 The data source will match the authority-path pattern
 
@@ -117,7 +116,7 @@ The data under the 'domain' belongs-to the domain.
 The code use the file extension to detirmine the process pipeline. 
 
 
-```
+```shell
 # if extension .md then process with cmark
 src
   ├── data
@@ -126,14 +125,14 @@ src
 ```
 
 Adjust this code to suite your own use cases. 
-<!-- 
-## Unstructured Data and Unparsed Text
 
-TODO
+<!--
 
-Unstructured Data and Unparsed Text
+##  Unparsed Text
 
-- use file-system instead of db
+Some structured data formats like JSON and CSV can be parsed with build in functions. 
+
+Data from other text formats can be extracted via XQuery regular expressions.
 
 data belonging to a domain
 - assets/{domain}{path} with extension
@@ -157,22 +156,38 @@ commons
  - If the data source is binary then a link item pointing to the file location can be stored in the database.
 -->
 
-## link items
 
-TODO
+## get all db identifiers
 
-## Collection Lists and Item Retieval
+```shell
+> make data-list
+http://localhost/index
+http://localhost/layout
+http://localhost/articles/as-a-service
+...
+```
+
+
+
+
+
+
+
+
+
+
 
 The XQuery expression to get a list of URI in the  'example.com' database
 
-```
+```shell
 'http://example.com' => uri-collection() => string-join('&#10;')
 ```
 
 This expression needs to run in the context of the running container instance
 
-```
- podman exec xq xqerl eval "xqerl:run(\"'http://example.com' => uri-collection() => string-join('&#10;') \")"
+```shell
+ podman exec xq xqerl eval \
+ "xqerl:run(\"'http://example.com' => uri-collection() => string-join('&#10;') \")"
 ```
 
 

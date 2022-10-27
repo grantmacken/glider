@@ -1,14 +1,11 @@
 
 # Container Volumes
 
-Our running containers have volume mounts:
-
-**xq**: has these volume mounts
+The running **xq** container has these named volume mounts
  - **xqerl-database** volume: holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
  - **xqerl-code** volume: holds user main and library XQuery modules which are compiled into beam files
- - **static-assets** volume: holds binary and unparsed text files in the container filesystem. 
-
- **or**: has these volume mounts
+ - **xqerl-priv** volume: holds binary and unparsed text files in the erlang application `./priv` directory. 
+ The running **or** container has these volume mounts
  - **proxy** volume: holds nginx configuration files
  - **letsencrypt** volume: will hold TLS certs from letsencrypt
 

@@ -15,7 +15,7 @@ function msg() {
 }
 
 function die() {
-  local msg=$(echo -n "✘  " && echo $1)
+  local msg=$(echo -n '✘  ' && echo "$1")
   local code=${2-1} # default exit status 1
   msg "$msg"
   exit "$code"
@@ -49,21 +49,20 @@ case "${#args[@]}" in
 		--header "Slug: $RESOURCE" \
 		--data-binary @- \
 		--output /dev/null \
-		${DB}/${DIRNAME}  | grep -q 201
+		${DB}/${DIRNAME}
     ;;
   xml)
-    echo "TODO: collection: $URI "
-    exit
-  dash
-    # use xmllint to check if doc wellformed
     xmllint $SRC &>/dev/null || die " [ $SRC  ] invalid XML: not well formed"
-    curl --silent --show-error --connect-timeout 1 --max-time 2 \
-      --dump-header - \
-      --output /dev/null \
-      --header "Content-Type: application/xml" \
-      --header "Slug: ${RESOURCE}" \
-      --data-binary "@${SRC}" \
-      $URI
+    xmllint --nowarning --c14n $SRC |
+    podman run --rm --pod podx \
+        --interactive ghcr.io/grantmacken/podx-curl:${CURL_VER} \
+        --silent --show-error --connect-timeout 1 --max-time 2 \
+        --write-out '%{http_code}' --output /dev/null \
+        --header "Content-Type: application/xml" \
+        --header "Slug: $RESOURCE" \
+        --data-binary @- \
+        --output /dev/null \
+        ${DB}/${DIRNAME}/
     ;;
   md)
   echo "collection:  $DB/$DIRNAME"
@@ -90,22 +89,23 @@ case "${#args[@]}" in
     ;;
   xq)
   SOURCE="./src/data/$BASE"
-  echo "src: $SOURCE "
-  dash
-  podman exec xq xqerl eval "
-  Arg1 = list_to_binary(\"${SOURCE}\"),
-  Args = #{<<\"src\">> => Arg1},
-  Mod = xqerl:compile(\"./src/code/db-store-func.xq\"),
-  case Mod:main(Args) of
-    Bin when is_binary(Bin) ->  file:write_file(\"./src/store.xq\",binary_to_list(Bin));
-    Atom when is_atom(Atom) -> Atom;
-    _ -> false
-  end,
-  xqerl:run(xqerl:compile(\"./src/store.xq\"))."
-  rm -f ./src/store.xq
-    ;;
+  #echo "src: $SOURCE"
+  URI="http://$DIRNAME/$RESOURCE"
+  RUN=$(cat << EOF
+  try {
+  let \$item := $(cat $SOURCE )
+    return
+    if (\$item instance of item())
+    then ( true(),db:put( \$item,'$URI' ))
+    else false()
+    } catch * {false()}
+EOF
+)
+  # echo -e "$RUN"
+  podman exec xq xqerl eval "xqerl:run(\"$RUN\")."
+  ;;
   *)
-    die " [ ${ext} ] can not handle extension "
+    die " [ ${EXT} ] can not handle extension "
     ;;
   esac
   ;;

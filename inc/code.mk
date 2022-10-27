@@ -2,7 +2,7 @@
 # 1. main modules: on write, compiled to beam files located at './code/ebin'
 # 2. library modules: on write, compiled, registered lib
 # 3. restXQ modules: on write, compiled, registered lib
-# 4. escripts: on write, copy to location ./code/escripts
+# 4. escripts: on write, copy to ./priv/bin/  -  the priv-bin volume
 # Except for restXQ modules,  modules are in a flat directory structure: src/code/{name}.{xq or xqm}
 # xq for main modules 
 # xqm for library modules
@@ -12,74 +12,151 @@
 # 
 # ----------------------------------------
 
-restxqModulesBuild := $(patsubst src/%,_build/%.txt,$(wildcard src/code/routes/*.xqm)) 
-libraryModulesBuild :=$(filter-out $(restxqModulesBuild), $(patsubst src/%,_build/%.txt,$(call rwildcard,src/code,*.xqm))) 
-mainModulesBuild := $(patsubst src/%,_build/%.txt,$(call rwildcard,src/code,*.xq))
-escriptsBuild := $(patsubst src/%,_build/%.txt,$(call rwildcard,src/code,*.escript))
-xqDataBuild := $(patsubst src/%.xq,_build/%.xq.txt,$(call rwildcard,src/data,*.xq))
+restxqModulesBuild := $(patsubst src/code/routes/%,_build/priv/modules/%,$(wildcard src/code/routes/*.xqm)) 
+libModulesBuild := $(patsubst src/code/library_modules/%,_build/priv/modules/%,$(wildcard src/code/library_modules/*.xqm))
+mainModulesBuild := $(patsubst src/code/main_modules/%,_build/priv/modules/%,$(wildcard src/code/main_modules/*.xq))
+mainModulesClean := $(patsubst src/code/main_modules/%,./priv/modules/%,$(wildcard src/code/main_modules/*.xq))
+escriptsBuild := $(patsubst src/%,_build/%,$(wildcard src/code/escripts/*))
+escriptsClean := $(patsubst src/code/escripts/%,./priv/bin/%,$(wildcard src/code/escripts/*))
 # xquery constructors that can be stored as XDM items the xqerl db
 # these can be functions, maps or arrays we build here to do a compile check
 # $(mainModulesBuild) $(xqDataBuild)
 #
-# $(info $(mainModulesBuild))
+###########
+## CODE ##
+##########
+# restXQ modules are compiled last
+# After all files are compile we tar the xqerl-code volume.
+# There might be running procceses so the
+# pod is paused first, then the volume exported, after this the pod is unpaused
 
-.PHONY: code-escripts 
-code-escripts: $(escriptsBuild)  ## xqerl code: put runnable escripts into xqerl-code volume
-
-.PHONY: code-escripts-clean
-code-escripts-clean: ## xqerl code: remove escripts in xqerl-code volume
-	echo ' - remove build escripts and escripts in xqerl-code volume'
-	rm -fv $(escriptsBuild)
-	echo ' - remove escripts in xqerl-code volume'
-	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) -c 'rm -rfv ./code/escripts/*'
-
-.PHONY: code-escripts-list
-code-escripts-list: ## xqerl code: list escripts in xqerl-code volume
-	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) -c 'ls -l ./code/escripts'
-
-.PHONY: code-main-modules 
-code-main-modules: $(mainModulesBuild) ## xqerl-code: compile main modules
-
-.PHONY: code-main-modules-clean 
-code-main-mod-clean :  ## xqerl-code: remove main module files from code'
-	echo ' - remove build files'
-	rm -fv $(mainModulesBuild)
-	echo ' - remove xquery main module files in in code volume'
-	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) \
-		-c 'rm -frv ./code/main_modules'
-
-.PHONY: code-main-modules-list 
-code-main-modules-list: ## xqerl-code: list beam compiled main module files'
-	echo ' list beam compiled main module files'
-	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) \
-		-c 'ls ./code/ebin | grep main_modules'
-
-
-.PHONY: code-library-modules 
-code-library-modules: $(libraryModulesBuild) ## xqerl-code: compile main modules
-
-.PHONY: code-restxq-modules 
-code-restxq-modules: $(restxqModulesBuild) ## xqerl-code: compile restXQ routes
-
-.PHONY: code-export 
-code-export: _deploy/xqerl-code.tar
 
 .PHONY: code 
-code: code-escripts code-main-modules code-library-modules code-restxq-modules ## XQuery modules: register library modules
+code: _deploy/xqerl-code.tar ## XQuery modules: register library modules
 
-_deploy/xqerl-code.tar: code
+.PHONY: code-clean
+code-clean: # remove `make code` build artifacts
+	echo '##[ $@ ]##'
+	rm -fv $(escriptsBuild) $(restxqModulesBuild) $(libModulesBuild) $(mainModulesBuild)
+
+_deploy/xqerl-code.tar: escripts main-modules lib-modules restxq-modules 
 	[ -d $(dir $@) ] || mkdir -p $(dir $@) 
 	podman pause xq &>/dev/null
 	podman volume export xqerl-code > $@
 	podman unpause xq &>/dev/null
 
+
+##############
+## ESCRIPTS ##
+##############
+
+.PHONY: escripts 
+escripts: $(escriptsBuild)  ## xqerl code: put runnable escripts into xqerl-code volume
+
+.PHONY: escript-run
+escript-run:
+	$(ESCRIPT) priv/bin/xdm $$( echo 'function(){()}' | base64 )
+
+.PHONY: escripts-clean
+escripts-clean: ## xqerl code: remove escripts in xqerl-code volume
+	echo ' - clean build escripts and associated escripts in priv-bin volume'
+	rm -v $(escriptsBuild) || true
+	podman run --rm --mount $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -v $(escriptsClean)' || true
+
+.PHONY: escripts-list
+escripts-list: ## xqerl code: list escripts in xqerl-code volume
+	podman run --rm --mount $(MountPriv) --entrypoint "sh" $(XQ) -c 'ls -l ./priv/bin/'
+
+_build/code/escripts/%: src/code/escripts/%
+	echo '##[ $(<) ]##'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	cat $< | podman run --rm --interactive --mount $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - | tee ./priv/bin/$(notdir $<)' > $@
+
+##################
+## MAIN MODULES ##
+##################
+
+.PHONY: main-modules 
+main-modules: $(mainModulesBuild) ## xqerl-code: compile main modules
+
+_build/priv/modules/%: src/code/main_modules/%
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo '##[ $(<) ]##'
+	cat $< | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - > ./priv/modules/$*'
+	$(ESCRIPT) priv/bin/compile ./priv/modules/$* | tee $@
+	grep -q :Info: $@ 
+
+
+.PHONY: main-modules-clean 
+main-modules-clean:  ## main-modules: remove build main modules and from container'
+	echo ' - remove build files'
+	rm -fv $(mainModulesBuild)
+	echo ' - remove xquery main module files in container'
+	podman run --rm --mount $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -v $(mainModulesClean)' || true
+
+.PHONY: main-modules-list 
+main-modules-list: ## xqerl-code: list beam compiled main module files'
+	echo ' list beam compiled main module files'
+	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) \
+		-c 'ls ./code/ebin' | grep -oP 'file____usr_local_xqerl_priv_modules.+'
+
+#####################
+## LIBRARY MODULES ##
+#####################
+
+.PHONY: lib-modules 
+lib-modules: $(libModulesBuild) ## xqerl-code: compile main modules
+
+.PHONY: lib-modules-list
+lib-modules-list: ## XQuery modules: list registered XQuery library modules
+	# echo "##[ $(@) ##]"
+	$(ESCRIPT) priv/bin/list-libs
+
+.PHONY: lib-modules-clean 
+lib-modules-clean:
+	echo '#[ $@ ]#'
+	rm -fv $(libModulesBuild)
+
+_build/priv/modules/%: src/code/library_modules/%
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo "##[ $(@) ##]"
+	cat $< | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - > ./priv/modules/$*'
+	$(ESCRIPT) priv/bin/compile ./priv/modules/$* | tee $@
+	grep -q :Info: $@
+	# clean up
+	podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'rm ./priv/modules/$*'
+
+####################
+## RESTXQ MODULES ##
+####################
+
+.PHONY: restxq-modules 
+restxq-modules: $(restxqModulesBuild) ## xqerl-code: compile restXQ routes
+
+.PHONY: restxq-modules-clean 
+restxq-modules-clean: ## xqerl-code: clean restXQ build
+	echo '#[ $@ ]#'
+	rm -fv $(restxqModulesBuild)
+
+_build/priv/modules/%: src/code/routes/%
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	echo "##[ $(@) ##]"
+	cat $< | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - > ./priv/modules/$*'
+	$(ESCRIPT) priv/bin/compile ./priv/modules/$* | tee $@
+	grep -q :Info: $@
+	# clean up
+	podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'rm ./priv/modules/$*'
+
+
+
 .PHONY: code-deploy
 code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild) $(restxqModulesBuild)) ## XQuery modules: register library modules on remote xq container
-
-.PHONY: code-clean
-code-clean: # remove: `make code` build artifacts
-	echo '##[ $@ ]##'
-	rm -fv $(escriptsBuild) $(restxqModulesBuild) $(libraryModulesBuild) $(mainModulesBuild) $(xqDataBuild) _deploy/xqerl-code.tar
 
 .PHONY: code-volume-import
 code-volume-import: down
@@ -89,47 +166,11 @@ code-volume-import: down
 .PHONY: code-reset
 code-reset: service-stop volumes-remove-xqerl-code volumes code-clean service-start
 
-.PHONY: code-library-list
-code-library-list: ## XQuery modules: list registered XQuery library modules
-	echo "##[ $(@) ##]"
-	if podman ps -a | grep -q $(XQ)
-	then
-	$(ESCRIPT) code/escripts/list-libs.escript
-	fi
-
 .PHONY: code-deployed-library-list
 code-deployed-library-list:## XQuery modules: list registered XQuery library modules on remote xq container
 	echo "##[ $(@) ##]"
 	$(Gcmd) 'podman exec xq xqerl eval "[binary_to_list(X) || X <- xqerl_code_server:library_namespaces()]."' | 
 	jq -r '.[]'
-
-_build/code/%.xqm.txt: src/code/%.xqm
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	if podman ps -a | grep -q $(XQ)
-	then
-	cat $< | podman run --rm --interactive --mount $(MountCode) --entrypoint "sh" $(XQ) \
-		-c 'cat - > /tmp/$(notdir $<);\
-		mkdir -p $(dir $(patsubst src/%,%,$<));\
-		mv /tmp/$(notdir $<) $(patsubst src/%,%,$<)' 
-	$(ESCRIPT) code/escripts/compile.escript $(patsubst src/%,%,$<) |
-	tee $@
-	grep -q :Info: $@
-	sleep .25
-	fi
-
-_build/code/%.xq.txt: src/code/%.xq
-	echo '##[ $(<) ]##'
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	if podman ps -a | grep -q $(XQ)
-	then
-	cat $< | podman run --rm --interactive --mount $(MountCode) --entrypoint "sh" $(XQ) \
-		-c 'cat - > /tmp/$(notdir $<);\
-		mkdir -p $(dir $(patsubst src/%,%,$<));\
-		mv /tmp/$(notdir $<) $(patsubst src/%,%,$<)' 
-	$(ESCRIPT) code/escripts/compile.escript $(patsubst src/%,%,$<) | tee $@
-	# NOTE: leaving dir  and file in place?
-	grep -q :Info: $@
-	fi
 
 _deploy/code/%.txt: _build/code/%.txt
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -142,27 +183,4 @@ _deploy/code/%.txt: _build/code/%.txt
 	  && podman exec xq xqerl eval 'xqerl:compile(\"/home/$(notdir $(*))\").'" | tee $@
 	fi
 
-_build/data/%.xq.txt: src/data/%.xq
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	if podman ps -a | grep -q $(XQ)
-	then
-	echo '##[ $< ]##'
-	podman cp $< xq:/home/
-	podman exec xq xqerl eval '
-	Res = try
-	 Mod = xqerl:compile("/home/$(notdir $<)")
-	 of
-		D -> lists:concat(["$(<):1:Info: compiled ok! ", Mod])
-	 catch
-	 _:E -> lists:concat(["$(<):", integer_to_list(element(2,element(5,E))), ":Error: ",binary_to_list(element(3,E))])
-	 end.' | sed 's/"//g' | tee $@
-	grep -q :Info: $@
-	fi
-
-_build/code/escripts/%.txt: src/code/escripts/%
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	podman run --rm --mount $(MountCode) --entrypoint "sh" $(XQ) -c 'mkdir -p ./code/escripts'
-	cat $< | podman run --rm --interactive --mount $(MountCode) --entrypoint "sh" $(XQ) \
-		-c 'cat - > $(patsubst src/%,%,$<) && ls $(patsubst src/%,%,$<)' | 
-	tee $@
 

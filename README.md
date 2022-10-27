@@ -121,12 +121,13 @@ The container named **xq** has these volume mounts
  - The **xqerl-database** volume holds '[XDM](https://www.w3.org/TR/xpath-datamodel-31/) data items' and 'link items' in the xqerl database
  - The **xqerl-code** volume holds user main and library XQuery modules which are compiled into beam files
  - The **static-assets** volume holds binary and unparsed text files in the container filesystem. 
+ - The **priv-bin** volume holds callable erlang escript files. 
 
  The container named **or** has these volume mounts
  -  The **proxy** volume holds nginx/openresty configuration files
  -  The **letsencrypt** volume will hold TLS certs from letsencrypt
 
-The proxy, letsencrypt and static-assets volumes contain filesystem items
+The proxy, letsencrypt and static-assets priv-bin volumes contain filesystem items
  The xqerl-code and xqerl-database are volumes which allow us to persist xqerl **application state** 
  across host reboots or stoping and and restarting the pod.
 

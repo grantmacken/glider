@@ -48,7 +48,7 @@ case "${#args[@]}" in
     podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \
       --silent --show-error --connect-timeout 1 --max-time 2 \
       --output - \
-      --header "Accept: application/xml" "$URI" | xmllint --format -
+      --header "Accept: application/xml" "$URI" | xmllint  --format -
   ;;
   md)
      podman run --rm --pod podx ghcr.io/grantmacken/podx-curl:${CURL_VER} \

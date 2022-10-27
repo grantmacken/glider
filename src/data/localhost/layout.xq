@@ -9,9 +9,9 @@ element html {
       attribute content { 'width=device-width, initial-scale=1'}},
     element title { $Map?title },
     element link { 
-      attribute rel {"icon"},
-      attribute href { "/assets/images/favicon.ico"},
-      attribute sizes {"any"},
+      attribute rel {'icon'},
+      attribute href { '/assets/images/favicon.ico'},
+      attribute sizes {'any'},
     element link { 
       attribute rel {'stylesheet'},
       attribute href {'/assets/styles/index.css'},
@@ -20,7 +20,7 @@ element html {
     element script { attribute src {'/assets/scripts/prism.js'}},
     element script { text {'htmx.onLoad(function(){Prism.highlightAll();})'}}}},
     element header {
-      attribute role { "banner" },
+      attribute role { 'banner' },
       element h1 { $Map?title  }},
   element main { $Map?content},
   element footer { }}

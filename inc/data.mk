@@ -17,23 +17,7 @@ xqBuild := $(patsubst src/%,_build/%,$(xqList))
 .PHONY: data
 data: _deploy/xqerl-database.tar
 
-.PHONY: data-json
-data-json: $(jsonBuild)
-
-.PHONY: data-xml
-data-xml: $(xmlBuild)
-
-.PHONY: data-md
-data-md: $(mdBuild)
-
-.PHONY: data-xq
-data-xq: $(xqBuild)
-
-.PHONY: data-xq-clean
-data-xq-clean: 
-	rm -vf $(xqBuild)
-
-_deploy/xqerl-database.tar: $(mdBuild)  # $(xmlBuild) $(xqBuild) ## xqerl-db: store XDM data items into db
+_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-db: store XDM data items into db
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	podman pause xq &>/dev/null
 	podman volume export xqerl-database > $@
@@ -57,17 +41,21 @@ data-volume-import: down
 	podman volume import xqerl-database  _deploy/xqerl-database.tar
 
 .PHONY: data-reset
-data-reset: service-stop volumes-remove-xqerl-database volumes data-clean service-start
+data-reset: volumes-remove-xqerl-database volumes data-clean
+	echo '##[ $@ ]##'
+
+.PHONY: data-reset-service
+data-reset-service: service-stop volumes-remove-xqerl-database volumes data-clean service-start
 	echo '##[ $@ ]##'
 	
 .PHONY: data-clean
 data-clean:
 	echo '##[ $@ ]##'
-	rm -fv $(mdBuild) $(xmlBuild) $(xqBuild) _deploy/xqerl-database.tar
+	rm -fv $(jsonBuild) $(mdBuild) $(xmlBuild) $(xqBuild)  _deploy/xqerl-database.tar
 
 .PHONY: data-list
 data-list: ## xqerl-db: list all database collections and items
-	$(ESCRIPT) code/escripts/list-data.escript
+	$(ESCRIPT) priv/bin/list-db-uri
 
 .PHONY: data-in-pod-list
 data-in-pod-list:
@@ -77,24 +65,88 @@ data-in-pod-list:
 		http://localhost:8081/db/$(DOMAIN)
 	echo
 
+###########################
+## XQ  XDM items as data ##
+###########################
+
+.PHONY: data-xq
+data-xq: $(xqBuild)
+
+.PHONY: data-xq-clean
+data-xq-clean: 
+	rm -vf $(xqBuild)
+
 _build/data/%.xq: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $< ]##'
-	$(ESCRIPT) code/escripts/db-store-xdm.escript 'http://$*' '$(shell base64 $<)'
-	$(EXEC) cat '/home/tmp.xq' > $@
+	# first do a compile check
+	cat $< | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - > ./priv/modules/$(notdir $*)'
+	$(ESCRIPT) priv/bin/compile ./priv/modules/$(notdir $*) | grep -q :Info:
+	# podman run --rm --mount  $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -f ./priv/modules/$(notdir $*)'
+	bin/db-create $< | grep -q true
+	cp $< $@
+
+
+##########
+## JSON ##
+##########
+
+.PHONY: data-json
+data-json: $(jsonBuild)
+
+.PHONY: data-json-clean
+data-json-clean: 
+	rm -vf $(jsonBuild)
 
 _build/data/%.json: src/data/%.json
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	# echo '##[ $(*) ]##'
+	echo '##[ $(*) ]##'
 	if bin/db-available $<
 	then
+	 bin/db-update $< | grep -q '204'
+	else
+	 bin/db-create $<  | grep -q '201'
+	fi
+	sleep 1
+	bin/db-retrieve $< > $@
+
+################
+## COMMONMARK ##
+##  MARKDOWN  ##
+################
+
+.PHONY: data-md
+data-md: $(mdBuild)
+
+.PHONY: data-md-clean
+data-md-clean: 
+	rm -vf $(mdBuild)
+
+_build/data/%.xml: src/data/%.md
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	if bin/db-available $<
+	then
+	echo 'db update: $* '
 	bin/db-update $< | grep -q '204'
 	else
-	 bin/db-create $< | grep -q '201'
+	echo 'db create: $* '
+	bin/db-create $< | grep -q '201'
 	fi
 	bin/db-retrieve $< > $@
 
-_build/data/%.xml: src/data/%.md
+#########
+## XML ##
+#########
+
+.PHONY: data-xml
+data-xml: $(xmlBuild)
+
+.PHONY: data-xml-clean
+data-xml-clean: 
+	rm -vf $(xmlBuild)
+
+_build/data/%.xml: src/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $(<) ]##'
 	if bin/db-available $<
@@ -142,40 +194,6 @@ _deploy/data/%.xml: _build/data/%.xml
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
 
-_build/data/%.xml: src/data/%.xml
-	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(*) ]##'
-	if podman run --rm --pod $(POD) $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-		-I --header "Accept: application/xml" \
-		http://localhost:8081/db/$(*) | grep -q '200'
-	then
-	echo "xqerl database: update XML from source"
-	cat $< |
-	podman run --rm  --pod $(POD) --interactive $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-    -X PUT \
-		--header "Content-Type: application/xml" \
-		--data-binary @- \
-		http://localhost:8081/db/$(*) | grep -q '204'
-	cp $< $@
-	else
-	echo "xqerl database: new XML from source"
-	echo 'collection: http://$(dir $(*))'
-	echo 'resource: $(basename $(notdir $<))'
-	cat $< |
-	podman run --rm  --pod $(POD) --interactive $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		--write-out '%{http_code}' --output /dev/null \
-		--header "Content-Type: application/xml" \
-		--header "Slug: $(basename $(notdir $<))" \
-		--data-binary @- \
-		--output /dev/null \
-		http://localhost:8081/db/$(dir $(*)) | grep -q '201'
-	cp $< $@
-	fi
 
 
 

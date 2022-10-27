@@ -28,7 +28,8 @@ CURL      := ghcr.io/grantmacken/podx-curl:$(CURL_VER)
 # xqerl volume mounts
 MountCode := type=volume,target=/usr/local/xqerl/code,source=xqerl-code
 MountData := type=volume,target=/usr/local/xqerl/data,source=xqerl-database
-MountAssets := type=volume,target=/usr/local/xqerl/priv/static/assets,source=static-assets
+MountPriv := type=volume,target=/usr/local/xqerl/priv,source=xqerl-priv
+
 # proxy volume mounts
 MountProxy   := type=volume,target=/opt/proxy,source=proxy
 MountLetsencrypt := type=volume,target=/etc/letsencrypt,source=letsencrypt
@@ -125,8 +126,8 @@ up: or-up
 	$(call Dump,'http',localhost,/xqerl)
 	echo && $(DASH)
 
-.PHONY: images 
-images:  ## pull docker images
+.PHONY: container-images 
+container-images:  ## pull docker images
 	echo "##[ $(@) ]##"
 	podman images | grep -oP 'xqerl(.+)$(XQERL_VER)' || podman pull $(XQ)
 	podman images | grep -oP 'podx-openresty(.+)$(PROXY_VER)' || podman pull $(OR)
@@ -141,22 +142,26 @@ images-reset-xqerl:
 	podman rmi ghcr.io/grantmacken/xqerl:v0.1.10 
 
 .PHONY: volumes
-volumes: images
+volumes: container-images
 	echo "##[ $(@) ]##"
-	@podman volume exists xqerl-code || podman volume create xqerl-code
-	@podman volume exists xqerl-database || podman volume create xqerl-database
-	@podman volume exists static-assets || podman volume create static-assets
-	@podman volume exists proxy || podman volume create proxy
-	@podman volume exists letsencrypt || podman volume create letsencrypt
+	podman volume exists xqerl-code || podman volume create xqerl-code
+	podman volume exists xqerl-database || podman volume create xqerl-database
+	podman volume exists xqerl-priv || podman volume create xqerl-priv
+	# podman volume exists static-assets || podman volume create static-assets
+	# podman volume exists priv-bin || podman volume create priv-bin
+	podman volume exists proxy || podman volume create proxy
+	podman volume exists letsencrypt || podman volume create letsencrypt
 
 .PHONY: volumes-clean
-volumes-clean: volumes-remove-static-assets volumes-remove-xqerl-code volumes-remove-xqerl-database volumes-remove-proxy
+volumes-clean: volumes-remove-xqerl-code volumes-remove-xqerl-database volumes-remove-xqerl-priv volumes-remove-proxy 
 	echo "##[ $(@) ]##"
+	echo 'All podx volumes have been removed apart from the letsencypt volume'
+	echo 'Restore volumes with `make volumes`'
 
-.PHONY: volumes-remove-static-assets
-volumes-remove-static-assets:
-	echo '##[ $@ ]##'
-	podman volume remove static-assets || true
+# .PHONY: volumes-remove-static-assets
+# volumes-remove-static-assets:
+# 	echo '##[ $@ ]##'
+# 	podman volume remove static-assets || true
 
 .PHONY: volumes-remove-xqerl-code
 volumes-remove-xqerl-code:
@@ -167,6 +172,12 @@ volumes-remove-xqerl-code:
 volumes-remove-xqerl-database:
 	echo '##[ $@ ]##'
 	podman volume remove xqerl-database || true
+
+.PHONY: volumes-remove-xqerl-priv
+	volumes-remove-xqerl-priv:
+	echo '##[ $@ ]##'
+	podman volume remove priv-bin || true
+
 
 .PHONY: volumes-remove-proxy
 volumes-remove-proxy:
@@ -222,8 +233,12 @@ clean-service: ## remove service
 .PHONY: pod-clean
 pod-clean: ## remove podx including containers 
 	echo "##[ $(@) ]##"
+	if podman pod exists $(POD)
+	then
 	podman pod rm --force $(POD)
 	podman ps --pod -all
+	fi
+
 
 .PHONY: system-clean
 system-clean: ## remove podx including containers 
@@ -241,7 +256,7 @@ xq-up: podx
 	podman run --name xq --pod $(POD) \
 		--mount $(MountCode) \
 		--mount $(MountData) \
-    --mount $(MountAssets) \
+    --mount $(MountPriv) \
 		--tz=$(shell timedatectl | grep -oP 'Time zone: \K[\w/]+') \
 		--detach $(XQ)
 	sleep 3
@@ -296,6 +311,8 @@ xq-down: #TODO use systemd instead
 .PHONY: service-enable
 service-enable:
 	echo "##[ $(@) ]##"
+	if ! systemctl --user is-enabled pod-podx.service
+	then
 	which systemctl &>/dev/null || echo 'ERROR: For linux OS only: requires init systemd'
 	loginctl enable-linger $(USER) || true
 	mkdir -p $(HOME)/.config/systemd/user
@@ -317,25 +334,32 @@ service-enable:
 	# systemctl --user restart pod-podx.service &>/dev/null
 	rm -f *.service
 	podman pod stop $(POD)
+	systemctl --user start pod-podx.service || true
+	fi
 	#reboot
 
 .PHONY: service-disable
 service-disable:  ## disable podx service
-	@systemctl --user stop pod-podx.service || true
-	@systemctl --user disable container-xq.service || true
-	@systemctl --user disable container-or.service || true
-	@systemctl --user disable pod-podx.service || true
+	if systemctl --user is-enabled pod-podx.service
+	then
+	systemctl --user stop pod-podx.service || true
+	systemctl --user disable container-xq.service || true
+	systemctl --user disable container-or.service || true
+	systemctl --user disable pod-podx.service || true
 	pushd $(HOME)/.config/systemd/user/
 	rm -f container-or.service container-xq.service pod-podx.service
 	popd
-	@systemctl --user daemon-reload
+	systemctl --user daemon-reload
+	fi
 
 
 # Note systemctl should only be used on the pod unit and one should not start 
 
 .PHONY: service-start
 service-start: 
-	systemctl --user start pod-podx.service
+	if systemctl --user is-enabled pod-podx.service &>/dev/null
+	then
+	systemctl --user start pod-podx.service || true
 	$(DASH)
 	sleep 2
 	echo -n 'container xq status: '
@@ -344,6 +368,7 @@ service-start:
 	echo -n 'container or status: '
 	podman inspect -f '{{.State.Status}}' or
 	$(DASH)
+	fi
 
 .PHONY: service-stop
 service-stop:
