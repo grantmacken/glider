@@ -6,7 +6,6 @@ src/proxy/conf/certificates.conf
 src/proxy/certs/*
 
 src/assets/styles/asciinema
-src/assets/styles/asciinema
 src/assets/styles/missing
 
 src/assets/scripts/asciinema
