@@ -8,5 +8,5 @@ MAKEFLAGS += --silent
 .DEFAULT_GOAL := build
 
 include .env
-include inc/default/init.mk
-include inc/*.mk
+include inc/init.mk
+include $(filter-out inc/init.mk ,$(wildcard inc/*.mk))
