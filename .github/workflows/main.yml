@@ -16,7 +16,7 @@ jobs:
         make hosts
     - name: xqerl up and flying
       run: make up
-    - name: checks - ps, log, top
+    - name: runtime checks - ps, log, top
       run: |
         podman ps --pod --all
         printf %60s | tr ' ' '-' && echo
