@@ -101,15 +101,23 @@ data-json-clean:
 
 _build/data/%.json: src/data/%.json
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(*) ]##'
-	if bin/db-available $<
+	jq empty $< ## fail if can't parse
+	if $(CRL) -I --header "Accept: application/json" $(DB)/$* | grep -q '200'
 	then
-	 bin/db-update $< | grep -q '204'
+	echo 'db update: $*'
+	cat $< |
+	jq '.' | # fail if not valid JSON
+	$(CRL) -X PUT --header "Content-Type: application/json" --data-binary @- $(DB)/$* |
+	grep -q '204'
 	else
-	 bin/db-create $<  | grep -q '201'
+	echo 'db create: $*'
+	cat $< |
+	jq '.' | # fail if not valid JSON
+	$(CRL) --header "Content-Type: application/json" --header "Slug: $(notdir $*)" --data-binary @- $(DB)/$(dir $*) |
+	grep -q '201'
 	fi
 	sleep 1
-	bin/db-retrieve $< > $@
+	podman run --rm --pod podx $(CURL) --silent --header "Accept: application/json"  $(DB)/$* > $@
 
 ################
 ## COMMONMARK ##
@@ -125,15 +133,32 @@ data-md-clean:
 
 _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	if bin/db-available $<
+	if $(CRL) -I --header "accept: application/xml" $(DB)/$* | grep -q '200'
 	then
-	echo 'db update: $* '
-	bin/db-update $< | grep -q '204'
+	echo 'db update: $*'
+	cat $< |
+	podman run --rm --interactive $(CMARK) \
+		--to xml \
+		--validate-utf8 \
+		--safe \
+		--smart 2>/dev/null |
+	xmllint --dropdtd - |
+	$(CRL) -X PUT --header "Content-Type: application/xml" --data-binary @- $(DB)/$* |
+	grep -q '204'
 	else
-	echo 'db create: $* '
-	bin/db-create $< | grep -q '201'
+	echo 'db create: $*'
+	cat $< |
+	podman run --rm --interactive $(CMARK) \
+		--to xml \
+		--validate-utf8 \
+		--safe \
+		--smart 2>/dev/null |
+	xmllint --dropdtd - |
+	$(CRL) --header "Content-Type: application/xml" --header "Slug: $(notdir $*)" --data-binary @- $(DB)/$(dir $*) |
+	grep -q '201'
 	fi
-	bin/db-retrieve $< > $@
+	sleep 1
+	podman run --rm --pod podx $(CURL) --silent --header "Accept: application/xml"  $(DB)/$* > $@
 
 #########
 ## XML ##
@@ -147,16 +172,26 @@ data-xml-clean:
 	rm -vf $(xmlBuild)
 
 _build/data/%.xml: src/data/%.xml
+	echo '##[  $< ]##'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $(<) ]##'
-	if bin/db-available $<
+	if $(CRL) -I --header "accept: application/xml" $(DB)/$* | grep -q '200'
 	then
-	bin/db-update $< | grep -q '204'
+	echo 'db update: $*'
+	cat $< |
+	xmllint --dropdtd - |
+	$(CRL) -X PUT --header "Content-Type: application/xml" --data-binary @- $(DB)/$* |
+	grep -q '204'
 	else
-	bin/db-create $< | grep -q '201'
+	echo 'db create: $*'
+	cat $< |
+	xmllint --dropdtd - |
+	$(CRL) --header "Content-Type: application/xml" --header "Slug: $(notdir $*)" --data-binary @- $(DB)/$(dir $*) |
+	grep -q '204'
 	fi
-	bin/db-retrieve $< > $@
-
+	sleep 1
+	podman run --rm --pod podx $(CURL) --silent --header "Accept: application/xml"  $(DB)/$* > $@
+	
+	
 _deploy/data/%.xml: _build/data/%.xml
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[ $* ]##'
@@ -193,11 +228,6 @@ _deploy/data/%.xml: _build/data/%.xml
 		--silent --show-error --connect-timeout 1 --max-time 2 \
 		--header "Accept: application/xml" \
 		http://localhost:8081/db/$(*)' > $@
-
-
-
-
-
 
 _deploy/data/%.xq: _build/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

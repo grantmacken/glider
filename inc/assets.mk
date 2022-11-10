@@ -55,6 +55,27 @@ assets-clean:
 ## STYLES ##
 #############
 
+style-sources: \
+ src/assets/styles/missing/$(MISSING_VER)/missing.css \
+ src/assets/styles/missing/$(MISSING_VER)/missing-prism.css \
+ src/assets/styles/asciinema/$(ASCIINEMA_VER)/asciinema-player.css
+
+src/assets/styles/asciinema/$(ASCIINEMA_VER)/asciinema-player.css:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/asciinema-player$(subst v,@,$(ASCIINEMA_VER))/dist/bundle/asciinema-player.css > $@
+
+src/assets/styles/missing/$(MISSING_VER)/missing.css:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://the.missing.style/$(MISSING_VER)/missing.css > $@
+
+src/assets/styles/missing/$(MISSING_VER)/missing-prism.css:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://the.missing.style/$(MISSING_VER)/missing-prism.css > $@
+
+
 .PHONY: styles 
 styles: $(stylesBuild) ## static assets: cascading style sheets build chain
 
@@ -80,6 +101,40 @@ _build/assets/styles/%: src/assets/styles/%
 #############
 ## SCRIPTS ##
 #############
+
+script-sources: \
+ src/assets/scripts/asciinema/$(ASCIINEMA_VER)/asciinema-player.min.js \
+ src/assets/scripts/htmx/$(HTMX_VER)/htmx.min.js \
+ src/assets/scripts/missing/$(MISSING_VER)/menu.js \
+ src/assets/scripts/missing/$(MISSING_VER)/overflow-nav.js \
+ src/assets/scripts/missing/$(MISSING_VER)/tabs.js \
+
+
+src/assets/scripts/asciinema/$(ASCIINEMA_VER)/asciinema-player.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/asciinema-player$(subst v,@,$(ASCIINEMA_VER))/dist/bundle/asciinema-player.min.js > $@
+
+src/assets/scripts/htmx/$(HTMX_VER)/htmx.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/htmx.org$(subst v,@,$(HTMX_VER))/dist/htmx.min.js > $@
+
+src/assets/scripts/missing/$(MISSING_VER)/tabs.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://the.missing.style/$(MISSING_VER)/missing-js/tabs.js > $@
+
+src/assets/scripts/missing/$(MISSING_VER)/menu.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://the.missing.style/$(MISSING_VER)/missing-js/menu.js > $@
+
+src/assets/scripts/missing/$(MISSING_VER)/overflow-nav.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://the.missing.style/$(MISSING_VER)/missing-js/overflow-nav.js > $@
+
 
 .PHONY: scripts
 scripts: $(scriptsBuild)

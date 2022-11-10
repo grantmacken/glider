@@ -25,6 +25,10 @@ CMARK     := ghcr.io/grantmacken/podx-cmark:$(CMARK_VER)
 # CSSNANO   := ghcr.io/grantmacken/podx-cssnano:$(GHPKG_CSSNANO_VER)
 W3M       := ghcr.io/grantmacken/podx-w3m:$(W3M_VER)
 CURL      := ghcr.io/grantmacken/podx-curl:$(CURL_VER)
+CURL_OPTS := --silent --show-error --connect-timeout 2 --max-time 4 --write-out '%{http_code}' --output /dev/null 
+CRL := podman run --interactive --pod $(POD) --rm  $(CURL) $(CURL_OPTS)
+DB := http://localhost:8081/db
+
 # xqerl volume mounts
 MountCode := type=volume,target=/usr/local/xqerl/code,source=xqerl-code
 MountData := type=volume,target=/usr/local/xqerl/data,source=xqerl-database
@@ -43,7 +47,7 @@ SCHEME ?= https
 DOMAIN ?= $(DOMAIN)
 ROUTE ?= /index
 Dump = podman run --pod $(POD) --rm $(W3M) -dump $(1)://$(2)$(3)
-CRL := podman run --pod $(POD) --rm  $(CURL)
+
 
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 ipAddress = podman inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(OR)
@@ -172,6 +176,7 @@ volumes-remove-xqerl-code:
 volumes-remove-xqerl-database:
 	echo '##[ $@ ]##'
 	podman volume remove xqerl-database || true
+	$(MAKE) data-clean
 
 .PHONY: volumes-remove-xqerl-priv
 	volumes-remove-xqerl-priv:

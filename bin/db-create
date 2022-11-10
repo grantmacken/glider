@@ -31,8 +31,7 @@ case "${#args[@]}" in
   EXT="${BASENAME##*.}"
   RESOURCE="${BASENAME%.*}"
   URI="${DB}/${DIRNAME}"
-  EXT="${BASENAME##*.}"
-  RESOURCE="${BASENAME%.*}"
+
   # echo "##[collection:  $URI ]##"
   # echo "##[  resource:  $RESOURCE ]##"
   # use extension
