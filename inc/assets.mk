@@ -1,11 +1,21 @@
-###########################
-### XQUERY ASSETS ###
-# dealing directly with volume so 
+##[ ASSET SOURCES ]##
+# asset resource versions 
+ASCIINEMA_VER=v3.0.1
+HTMX_VER=v1.8.2
+MISSING_VER=v1.0.1
+PRISMJS_VER=v1.29.0
+# Note: add backward slash to discover latest  
+# https://unpkg.com/prismjs/
+# https://unpkg.com/asciinema-player/
+
+# build notes:  dealing directly with volume so 
 # so xq container does not have to be running
-## for svg cons use: https://icons.getbootstrap.com/
+## https://icons.getbootstrap.com/
 ## pick icons 
 ## <img src="/assets/icons/bootstrap.svg" alt="Bootstrap" width="32" height="32">
-###########################
+
+
+##[ ASSET BUILDS ]##
 stylesBuild := $(patsubst src/%.css,_build/%.css,$(call rwildcard, src/assets/styles, *.css))
 stylesClean := $(patsubst src/%,./priv/static/%,$(call rwildcard, src/assets/styles, *.css))
 fontsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/fonts, *.woff2))
@@ -60,6 +70,11 @@ style-sources: \
  src/assets/styles/missing/$(MISSING_VER)/missing-prism.css \
  src/assets/styles/asciinema/$(ASCIINEMA_VER)/asciinema-player.css
 
+style-sources-clean:
+	echo '##[ $@ ]##'
+	rm -r  src/assets/styles/missing || true
+	rm -r src/assets/styles/asciinema || true
+
 src/assets/styles/asciinema/$(ASCIINEMA_VER)/asciinema-player.css:
 	echo '#[ $@ ]#'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -98,27 +113,65 @@ _build/assets/styles/%: src/assets/styles/%
 	podman run --rm --interactive --mount $(MountPriv) --entrypoint "sh" $(XQ) \
 		-c 'cat - | tee ./priv/static/assets/styles/$*' > $@
 
-#############
-## SCRIPTS ##
-#############
-
+##[ SCRIPTS ]##
 script-sources: \
  src/assets/scripts/asciinema/$(ASCIINEMA_VER)/asciinema-player.min.js \
- src/assets/scripts/htmx/$(HTMX_VER)/htmx.min.js \
+ src/assets/scripts/htmx/$(HTMX_VER)/htmx.js \
  src/assets/scripts/missing/$(MISSING_VER)/menu.js \
  src/assets/scripts/missing/$(MISSING_VER)/overflow-nav.js \
  src/assets/scripts/missing/$(MISSING_VER)/tabs.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-core.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/plugins/autoloader/prism-autoloader.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-bash.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-clike.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-css.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-markup.min.js \
+ src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-xquery.min.js
 
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-core.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-core.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/plugins/autoloader/prism-autoloader.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/plugins/autoloader/prism-autoloader.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-clike.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-clike.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-bash.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-bash.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-css.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-css.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-markup.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-markup.min.js > $@
+
+src/assets/scripts/prismjs/$(PRISMJS_VER)/components/prism-xquery.min.js:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/prismjs$(subst v,@,$(PRISMJS_VER))/components/prism-xquery.min.js > $@
 
 src/assets/scripts/asciinema/$(ASCIINEMA_VER)/asciinema-player.min.js:
 	echo '#[ $@ ]#'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	curl -s https://unpkg.com/asciinema-player$(subst v,@,$(ASCIINEMA_VER))/dist/bundle/asciinema-player.min.js > $@
 
-src/assets/scripts/htmx/$(HTMX_VER)/htmx.min.js:
+src/assets/scripts/htmx/$(HTMX_VER)/htmx.js:
 	echo '#[ $@ ]#'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	curl -s https://unpkg.com/htmx.org$(subst v,@,$(HTMX_VER))/dist/htmx.min.js > $@
+	curl -s https://unpkg.com/htmx.org$(subst v,@,$(HTMX_VER))/dist/htmx.js > $@
 
 src/assets/scripts/missing/$(MISSING_VER)/tabs.js:
 	echo '#[ $@ ]#'
@@ -134,7 +187,6 @@ src/assets/scripts/missing/$(MISSING_VER)/overflow-nav.js:
 	echo '#[ $@ ]#'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	curl -s https://the.missing.style/$(MISSING_VER)/missing-js/overflow-nav.js > $@
-
 
 .PHONY: scripts
 scripts: $(scriptsBuild)

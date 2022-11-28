@@ -39,7 +39,7 @@ code-clean: # remove `make code` build artifacts
 	echo '##[ $@ ]##'
 	rm -fv $(escriptsBuild) $(restxqModulesBuild) $(libModulesBuild) $(mainModulesBuild)
 
-_deploy/xqerl-code.tar: escripts main-modules lib-modules restxq-modules 
+_deploy/xqerl-code.tar: escripts main-modules lib-modules routes
 	[ -d $(dir $@) ] || mkdir -p $(dir $@) 
 	podman pause xq &>/dev/null
 	podman volume export xqerl-code > $@
@@ -62,6 +62,12 @@ escripts-clean: ## xqerl code: remove escripts in xqerl-code volume
 	echo ' - clean build escripts and associated escripts in priv-bin volume'
 	rm -v $(escriptsBuild) || true
 	podman run --rm --mount $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -v $(escriptsClean)' || true
+	# podman run --rm --mount $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -v ./priv/bin/*' || true
+
+.PHONY: escripts-pull
+escripts-pull: ## escripts: pull down escripts located on server into src/code/escripts
+	echo '##[ $(@) ]##'
+	podman cp xq:/usr/local/xqerl/priv/bin/. src/code/escripts/
 
 .PHONY: escripts-list
 escripts-list: ## xqerl code: list escripts in xqerl-code volume
@@ -70,8 +76,10 @@ escripts-list: ## xqerl code: list escripts in xqerl-code volume
 _build/code/escripts/%: src/code/escripts/%
 	echo '##[ $(<) ]##'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	cat $< | podman run --rm --interactive --mount $(MountPriv) --entrypoint "sh" $(XQ) \
-		-c 'cat - | tee ./priv/bin/$(notdir $<)' > $@
+	cat $< | 
+	podman run --rm --interactive --mount $(MountPriv) --entrypoint "sh" $(XQ) \
+		-c 'cat - | 
+	tee ./priv/bin/$(notdir $<)' > $@
 
 ##################
 ## MAIN MODULES ##
@@ -134,11 +142,11 @@ _build/priv/modules/%: src/code/library_modules/%
 ## RESTXQ MODULES ##
 ####################
 
-.PHONY: restxq-modules 
-restxq-modules: $(restxqModulesBuild) ## xqerl-code: compile restXQ routes
+.PHONY: routes 
+routes: $(restxqModulesBuild) ## xqerl-code: compile restXQ routes
 
-.PHONY: restxq-modules-clean 
-restxq-modules-clean: ## xqerl-code: clean restXQ build
+.PHONY: routes-clean 
+routes-clean: ## xqerl-code: clean restXQ build
 	echo '#[ $@ ]#'
 	rm -fv $(restxqModulesBuild)
 
@@ -150,8 +158,7 @@ _build/priv/modules/%: src/code/routes/%
 	$(ESCRIPT) priv/bin/compile ./priv/modules/$* | tee $@
 	grep -q :Info: $@
 	# clean up
-	podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
-		-c 'rm ./priv/modules/$*'
+	#podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm ./priv/modules/$*'
 
 
 

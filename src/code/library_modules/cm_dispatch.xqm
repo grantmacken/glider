@@ -144,10 +144,14 @@ try{
    ]`` } }
 };
 
-(: TODO! @info code :)
+(: TODO! ? @info code :)
 declare
 function _:codeBlock( $node as node()* ) as item()* {
+ element figure {
   element pre {
+      if ( $node/@info  )  
+        then ( attribute class { 'language-' || $node/@info/string() })
+      else (),
     element code {
       if ( $node/@info  )  
         then ( attribute class { 'language-' || $node/@info/string() })
@@ -155,7 +159,7 @@ function _:codeBlock( $node as node()* ) as item()* {
         for $child in $node
           return _:dispatch($child/node())
     }
-  }
+  }}
 };
 
 declare

@@ -4,22 +4,32 @@
 # files for the proxy volume
 ConfList   := $(filter-out src/proxy/conf/proxy.conf,$(wildcard src/proxy/conf/*.conf)) src/proxy/conf/proxy.conf
 BuildConfs := $(patsubst src/%,_build/%,$(ConfList))
-BuildSelfSigned := $(patsubst src/%.pem,_build/%.pem, $(wildcard src/proxy/certs/*.pem))
+BuildCerts := $(patsubst src/%.pem,_build/%.pem, $(wildcard src/proxy/certs/*.pem))
 
-.PHONY: proxy 
+.PHONY: proxy
 proxy: _deploy/proxy.tar ## proxy: check and store src files in container 'or' filesystem
 
 .PHONY: proxy-clean
-proxy-clean:
+proxy-clean: # clean out proxy build files
 	echo '##[ $(@) ]##'
-	rm -fv $(BuildSelfSigned) $(BuildConfs) _deploy/proxy.tar || true
+	rm -fv $(BuildCerts) $(BuildConfs) _deploy/proxy.tar || true
+
+.PHONY: proxy-reset
+proxy-reset: # clean out proxy source file
+	echo '##[ $(@) ]##'
+	mkdir -p .backup/src/proxy
+	tar -zcvf .backup/src/proxy/$$(date --iso).tar.gz src/proxy
+	rm -fv src/proxy/conf/*
+	podman cp or:/opt/proxy/conf src/proxy/
+	rm -fv src/proxy/certs/*
+	podman cp or:/opt/proxy/certs src/proxy/
 
 .PHONY: proxy-get-confs
 proxy-get-confs:
 	echo '##[ $(@) ]##'
 	podman cp or:/opt/proxy/conf src/proxy/
 
-_deploy/proxy.tar: $(BuildSelfSigned) $(BuildConfs) 
+_deploy/proxy.tar: $(BuildCerts) $(BuildConfs) 
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	echo '##[  $(notdir $@) ]##'
 	podman volume export proxy > $@
@@ -45,16 +55,27 @@ _build/proxy/conf/%.conf: src/proxy/conf/%.conf
 		 'cat - > /opt/proxy/conf/$(notdir $<) && openresty -p /opt/proxy/ -c /opt/proxy/conf/proxy.conf -t' | 
 	tee $@
 
-.PHONY: mkcert
-mkcert: ## use mkcert to create self signed certs for DOMAIN specified in .env file
+.PHONY: proxy-mkcert
+proxy-mkcert: ## use mkcert to certificate authority and create certs for DOMAIN specified in .env file
+	echo '##[ $(notdir $@) ]##'
 	mkdir -p src/proxy/conf/
 	mkcert -install &>/dev/null
 	mkcert \
 		-key-file src/proxy/certs/$(DOMAIN).key.pem \
 		-cert-file src/proxy/certs/$(DOMAIN).pem $(DOMAIN)
-	touch src/proxy/conf/self_signed.conf
-	echo 'ssl_certificate_key /opt/proxy/certs/$(DOMAIN).key.pem;' > src/proxy/conf/self_signed.conf
-	echo 'ssl_certificate /opt/proxy/certs/$(DOMAIN).pem;' >> src/proxy/conf/self_signed.conf
+	touch src/proxy/conf/certs.conf
+	echo 'ssl_certificate_key /opt/proxy/certs/$(DOMAIN).key.pem;' > src/proxy/conf/certs.conf
+	echo 'ssl_certificate /opt/proxy/certs/$(DOMAIN).pem;' >> src/proxy/conf/certs.conf
+	# cat src/proxy/conf/certs.conf
+
+
+.PHONY: proxy-mkcert-clean
+proxy-mkcert-clean:
+	echo '##[ $@ ]##'
+	rm -f src/proxy/certs/$(DOMAIN).key.pem 
+	rm -f src/proxy/certs/$(DOMAIN).pem $(DOMAIN) 
+	rm -f src/proxy/conf/certs.conf
+
 
 _build/proxy/certs/%: src/proxy/certs/%
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)

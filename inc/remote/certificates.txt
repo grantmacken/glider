@@ -1,0 +1,11 @@
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Found the following certs:
+  Certificate Name: gmack.nz
+    Serial Number: 3fa1da7451615810542819f894f4bd86f23
+    Key Type: RSA
+    Domains: gmack.nz markup.nz
+    Expiry Date: 2023-02-24 20:17:30+00:00 (VALID: 89 days)
+    Certificate Path: /etc/letsencrypt/live/gmack.nz/fullchain.pem
+    Private Key Path: /etc/letsencrypt/live/gmack.nz/privkey.pem
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

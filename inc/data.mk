@@ -17,7 +17,7 @@ xqBuild := $(patsubst src/%,_build/%,$(xqList))
 .PHONY: data
 data: _deploy/xqerl-database.tar
 
-_deploy/xqerl-database.tar: $(mdBuild) $(xmlBuild) $(xqBuild) ## xqerl-db: store XDM data items into db
+_deploy/xqerl-database.tar: $(mdBuild) $(jsonBuild) $(xmlBuild) $(xqBuild) ## xqerl-db: store XDM data items into db
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	podman pause xq &>/dev/null
 	podman volume export xqerl-database > $@
@@ -53,21 +53,26 @@ data-clean:
 	echo '##[ $@ ]##'
 	rm -fv $(jsonBuild) $(mdBuild) $(xmlBuild) $(xqBuild)  _deploy/xqerl-database.tar
 
-.PHONY: data-list
-data-list: ## xqerl-db: list all database collections and items
+.PHONY: db-list
+db-list: ## xqerl-db: list all database collections and items
 	$(ESCRIPT) priv/bin/list-db-uri
 
-.PHONY: data-in-pod-list
-data-in-pod-list:
-	$(DASH)
-	podman run --rm --pod $(POD) $(CURL) \
-		--silent --show-error --connect-timeout 1 --max-time 2 \
-		http://localhost:8081/db/$(DOMAIN)
-	echo
+.PHONY: db-delete
+db-delete: 
+	for ITEM in $(shell $(ESCRIPT) priv/bin/list-db-uri)
+	do 
+	podman exec xq xqerl eval "xqerl:run(\"
+	try {'$$ITEM' => db:delete() } catch * {false()}
+	\")."
+	sleep 1
+	done
+
 
 ###########################
 ## XQ  XDM items as data ##
 ###########################
+
+
 
 .PHONY: data-xq
 data-xq: $(xqBuild)
@@ -78,15 +83,26 @@ data-xq-clean:
 
 _build/data/%.xq: src/data/%.xq
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	echo '##[ $< ]##'
-	# first do a compile check
+	echo ' - db put $*'
 	cat $< | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) \
 		-c 'cat - > ./priv/modules/$(notdir $*)'
 	$(ESCRIPT) priv/bin/compile ./priv/modules/$(notdir $*) | grep -q :Info:
-	# podman run --rm --mount  $(MountPriv) --entrypoint "sh" $(XQ) -c 'rm -f ./priv/modules/$(notdir $*)'
-	bin/db-create $< | grep -q true
-	cp $< $@
-
+	echo ' => as XDM item compile check: OK!'
+	cat <<-'EOF' | podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) -c 'cat - > ./priv/modules/$(notdir $*)'
+	try {
+	let $$item := $(shell cat $<)
+	return 
+	if ( $$item instance of item() )
+	then ( true(),db:put( $$item, 'http://$*' ))
+	else false()
+	} catch * {false()}
+	EOF
+	$(ESCRIPT) priv/bin/compile ./priv/modules/$(notdir $*) | grep -q :Info:
+	echo ' => put XDM item compile check: OK!'
+	echo -n ' => put success: '
+	podman exec xq xqerl eval "xqerl:run(xqerl:compile(\"./priv/modules/$(notdir $*)\"))."
+	podman run --rm --interactive --mount  $(MountPriv) --entrypoint "sh" $(XQ) -c 'cat ./priv/modules/$(notdir $*)' > $@
+	#cp $< $@
 
 ##########
 ## JSON ##
@@ -104,15 +120,15 @@ _build/data/%.json: src/data/%.json
 	jq empty $< ## fail if can't parse
 	if $(CRL) -I --header "Accept: application/json" $(DB)/$* | grep -q '200'
 	then
-	echo 'db update: $*'
+	echo ' - db update: $*'
 	cat $< |
-	jq '.' | # fail if not valid JSON
+	jq '.' | # pretty
 	$(CRL) -X PUT --header "Content-Type: application/json" --data-binary @- $(DB)/$* |
 	grep -q '204'
 	else
-	echo 'db create: $*'
+	echo ' - db create: $*'
 	cat $< |
-	jq '.' | # fail if not valid JSON
+	jq '.' | # pretty
 	$(CRL) --header "Content-Type: application/json" --header "Slug: $(notdir $*)" --data-binary @- $(DB)/$(dir $*) |
 	grep -q '201'
 	fi
@@ -135,7 +151,7 @@ _build/data/%.xml: src/data/%.md
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if $(CRL) -I --header "accept: application/xml" $(DB)/$* | grep -q '200'
 	then
-	echo 'db update: $*'
+	echo ' - db update: $*'
 	cat $< |
 	podman run --rm --interactive $(CMARK) \
 		--to xml \
@@ -146,7 +162,7 @@ _build/data/%.xml: src/data/%.md
 	$(CRL) -X PUT --header "Content-Type: application/xml" --data-binary @- $(DB)/$* |
 	grep -q '204'
 	else
-	echo 'db create: $*'
+	echo ' - db create: $*'
 	cat $< |
 	podman run --rm --interactive $(CMARK) \
 		--to xml \
@@ -172,21 +188,21 @@ data-xml-clean:
 	rm -vf $(xmlBuild)
 
 _build/data/%.xml: src/data/%.xml
-	echo '##[  $< ]##'
+	# echo '##[  $< ]##'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	if $(CRL) -I --header "accept: application/xml" $(DB)/$* | grep -q '200'
 	then
-	echo 'db update: $*'
+	echo ' - db update: $*'
 	cat $< |
 	xmllint --dropdtd - |
 	$(CRL) -X PUT --header "Content-Type: application/xml" --data-binary @- $(DB)/$* |
 	grep -q '204'
 	else
-	echo 'db create: $*'
+	echo '- db create: $*'
 	cat $< |
 	xmllint --dropdtd - |
 	$(CRL) --header "Content-Type: application/xml" --header "Slug: $(notdir $*)" --data-binary @- $(DB)/$(dir $*) |
-	grep -q '204'
+	grep -q '201'
 	fi
 	sleep 1
 	podman run --rm --pod podx $(CURL) --silent --header "Accept: application/xml"  $(DB)/$* > $@

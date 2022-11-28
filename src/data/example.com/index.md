@@ -1,7 +1,7 @@
  <!--
- title: xqerl glider docs
+ title: xqerl glider
+ subtitle: tree to tree - data driven web applications
 -->
-
 
 The [squirrel glider](https://en.wikipedia.org/wiki/Squirrel_glider) not to be confused with the flying squirrel, is a nocturnal gliding possum that
 lives amongst the trees of Australia.
@@ -14,12 +14,10 @@ If you are new to XQuery please refer to the resources at [learn XQuery ](https:
 
 The xqerl glider project aim is to help you set up data driven web applications using the xqerl XQuery application server.
 
- - [running xqerl as a service](articles/as-a-service)
- - [volumes in the container pod](articles/volumes)
- - [the development build cycle](articles/build)
- - [xqerl application databases](articles/xqerl-database)
- - [XQuery data from markup sources](articles/parsed-data-from-sources)
- - [XQuery code in xqerl](articles/xqerl-code)
- - [application static assets](articles/static-assets)
+```xquery
+function($Map as map(*)) as element() {
+  element html {}
+}
+```
 
-
+<div id="demo"/>

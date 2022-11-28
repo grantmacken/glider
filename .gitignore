@@ -2,15 +2,16 @@ _*
 .git
 .secrets
 # src artefacts created by make
-src/proxy/conf/certificates.conf
+src/proxy/conf/certs.conf
 src/proxy/certs/*
 
 src/assets/styles/asciinema
 src/assets/styles/missing
-
 src/assets/scripts/asciinema
+
 src/assets/scripts/htmx
 src/assets/scripts/missing
+src/assets/scripts/prismjs
 # src artefacts 'example.com'
 node_modules
 package-lock.json

@@ -1,9 +1,9 @@
-module namespace _ = 'http://localhost/#routes';
+module namespace _ = 'http://example.com/#routes';
 declare namespace cm ="http://commonmark.org/xml/1.0";
 import module namespace cmark = "http://xq/#cm_dispatch";
 
 declare
-%rest:path('/localhost/index')
+%rest:path('/example.com/index')
 %rest:GET
 %rest:produces('text/html')
 %output:method('html')
@@ -16,20 +16,30 @@ try {
     if ( $dbDocURI => doc-available() )
     then  $dbDocURI => doc()
     else error( QName(
-      'http://localhost', 'NO_DOCUMENT' ),
+      'http://example.com', 'NO_DOCUMENT' ),
       ``[ Could not resolve document URI: `{$dbDocURI}` ]``)
   let $dbCollectionURI :=  $dbBase || '/' || $domain
+
   let $dbLayoutURI := $dbCollectionURI  || '/layout'
   let $dbLayoutConstructor := 
     if ( $dbLayoutURI =  uri-collection($dbCollectionURI) ) 
     then $dbLayoutURI => db:get()
     else error( QName( 
-        'http://localhost', 'NO_LAYOUT_FUNCTION' ),
+        'http://example.com', 'NO_LAYOUT_FUNCTION' ),
         ``[ Could not resolve layout URI: `{$dbLayoutURI}` ]``)
+
+  let $dbAssetsURI := $dbCollectionURI  || '/assets'
+  let $dbAssetsMap := 
+    if ( $dbAssetsURI =  uri-collection($dbCollectionURI) ) 
+    then $dbAssetsURI => db:get()
+    else error( QName( 
+        'http://example.com', 'NO_ASSETS_MAP' ),
+        ``[ Could not resolve assets URI: `{$dbAssetsURI}` ]``)
 
   let $Map := $dbDoc => 
               cmark:frontmatter() =>
-              map:put( 'content',$dbDoc => cmark:dispatch()   )
+              map:put( 'content',$dbDoc => cmark:dispatch()) =>
+              map:put ( 'assets', $dbAssetsMap )
   return (
   _:response_header(map { 'status': '200', 'message': 'OK' } ),
   $dbLayoutConstructor( $Map )
@@ -41,7 +51,7 @@ try {
 };
 
 declare
-  %rest:path('/localhost/articles/{$ITEM}')
+  %rest:path('/example.com/articles/{$ITEM}')
   %rest:GET
   %rest:produces('text/html')
   %output:method('html')
@@ -55,7 +65,7 @@ try {
     if ( $dbDocURI => doc-available() )
     then  $dbDocURI => doc()
     else error( QName(
-      'http://localhost', 'NO_DOCUMENT' ),
+      'http://example.com', 'NO_DOCUMENT' ),
       ``[ Could not resolve document URI: `{$dbDocURI}` ]``)
 
   let $dbCollectionURI :=  $dbBase || '/' || $domain
@@ -64,12 +74,12 @@ try {
     if ( $dbLayoutURI =  uri-collection($dbCollectionURI) ) 
     then $dbLayoutURI => db:get()
     else error( QName( 
-        'http://localhost', 'NO_LAYOUT_FUNCTION' ),
+        'http://example.com', 'NO_LAYOUT_FUNCTION' ),
         ``[ Could not resolve layout URI: `{$dbLayoutURI}` ]``)
 
   let $Map := $dbDoc => 
               cmark:frontmatter() =>
-              map:put( 'content',$dbDoc => cmark:dispatch()   )
+              map:put( 'content',$dbDoc => cmark:dispatch())
   return (
   _:response_header( map { 'status': '200', 'message': 'OK' } ),
   $dbLayoutConstructor( $Map )
