@@ -163,7 +163,7 @@ _build/priv/modules/%: src/code/routes/%
 
 
 .PHONY: code-deploy
-code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libraryModulesBuild) $(restxqModulesBuild)) ## XQuery modules: register library modules on remote xq container
+code-deploy: $(patsubst _build/code/%,_deploy/code/%,$(libModulesBuild) $(restxqModulesBuild)) ## XQuery modules: register library modules on remote xq container
 
 .PHONY: code-volume-import
 code-volume-import: down

@@ -12,6 +12,8 @@ src/assets/scripts/asciinema
 src/assets/scripts/htmx
 src/assets/scripts/missing
 src/assets/scripts/prismjs
+
+src/assets/icons/bootstrap-icons
 # src artefacts 'example.com'
 node_modules
 package-lock.json

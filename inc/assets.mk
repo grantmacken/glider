@@ -1,9 +1,4 @@
-##[ ASSET SOURCES ]##
-# asset resource versions 
-ASCIINEMA_VER=v3.0.1
-HTMX_VER=v1.8.2
-MISSING_VER=v1.0.1
-PRISMJS_VER=v1.29.0
+
 # Note: add backward slash to discover latest  
 # https://unpkg.com/prismjs/
 # https://unpkg.com/asciinema-player/
@@ -28,18 +23,52 @@ imagesBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/images, *)
 imagesClean := $(patsubst src/%,./priv/static/%,$(call rwildcard, src/assets/images,*))
 iconsBuild := $(patsubst src/%,_build/%,$(call rwildcard, src/assets/icons, *.svg))
 
-.PHONY: assets assets-deploy
-assets: _deploy/xqerl-priv.tar ## static-assets: pre-process and store on container filesystem
+.PHONY: assets
+assets: $(stylesBuild) \
+	$(scriptsBuild) \
+	$(castsBuild) \
+	$(fontsBuild) \
+	$(imagesBuild) \
+	$(iconsBuild) \
+  _deploy/xqerl-priv.tar
 
-_deploy/xqerl-priv.tar: $(stylesBuild) $(scriptsBuild) $(castsBuild) $(fontsBuild) $(imagesBuild) $(iconsBuild)
+.PHONY: asset-sources
+asset-sources:
+	echo -n ' - latest bootstrap-icons: '
+	VERSION=$(shell w3m -dump https://unpkg.com/bootstrap-icons/  |grep -oP 'Version: \[\K\d+\.\d+\.\d+' )
+	sed -i "s/BOOTSTRAP_ICONS_VER=.*/BOOTSTRAP_ICONS_VER=v$${VERSION}/" .env
+	echo v$${VERSION}
+	echo -n ' - latest prismjs: '
+	VERSION=$(shell w3m -dump https://unpkg.com/prismjs/ | grep -oP 'Version: \[\K\d+\.\d+\.\d+')
+	sed -i "s/PRISMJS_VER=.*/PRISMJS_VER=v$${VERSION}/" .env
+	echo v$${VERSION}
+	echo -n ' - latest asciinema-player: '
+	VERSION=$(shell w3m -dump https://unpkg.com/asciinema-player/ | grep -oP 'Version: \[\K\d+\.\d+\.\d+')
+	echo v$${VERSION}
+	sed -i "s/ASCIINEMA_VER=.*/ASCIINEMA_VER=v$${VERSION}/" .env
+	echo -n ' - latest missing.style: '
+	VERSION=$(shell w3m -dump https://missing.style | grep -oP 'v\d+\.\d+\.\d+')
+	echo $${VERSION}
+	sed -i "s/MISSING_VER=.*/MISSING_VER=$${VERSION}/" .env
+	echo -n ' - latest htmx: '
+	VERSION=$(shell w3m -dump https://github.com/bigskysoftware/htmx/releases/latest | grep -oP '^v\d+\.\d+\.\d+$$' | head -1 )
+	sed -i "s/HTMX_VER=.*/HTMX_VER=$${VERSION}/" .env
+	echo $${VERSION}
+
+	$(MAKE) style-sources
+	$(MAKE) script-sources
+
+# _deploy/xqerl-priv.tar: 
+
+_deploy/xqerl-priv.tar:
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	# echo '##[  $(notdir $@) ]##' TODO $(iconsBuild) $(imagesBuild) 
 	podman volume export xqerl-priv > $@
 
-assets-deploy: ## static-assets: deploy assets on remote container filesystem
-	@echo '## $@ ##'
-	cat _deploy/xqerl-priv.tar |
-	$(Gcmd) ' cat - | podman volume import xqerl-priv - '
+# assets-deploy: ## static-assets: deploy assets on remote container filesystem
+# 	@echo '## $@ ##'
+# 	cat _deploy/xqerl-priv.tar |
+# 	$(Gcmd) ' cat - | podman volume import xqerl-priv - '
 
 .PHONY: assets-reset
 assets-reset: service-stop \
@@ -89,7 +118,6 @@ src/assets/styles/missing/$(MISSING_VER)/missing-prism.css:
 	echo '#[ $@ ]#'
 	[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	curl -s https://the.missing.style/$(MISSING_VER)/missing-prism.css > $@
-
 
 .PHONY: styles 
 styles: $(stylesBuild) ## static assets: cascading style sheets build chain
@@ -288,9 +316,15 @@ _build/assets/images/%: src/assets/images/%
 	podman run --rm --interactive --mount $(MountPriv) --entrypoint "sh" $(XQ) \
 		-c 'cat - | tee ./priv/static/assets/images/$*' > $@
 
-#############
-## IMAGES  ##
-#############
+##[ ICONS ]##
+# icon sources selected from https://icons.getbootstrap.com/
+.PHONY: icon-sources
+icon-sources: src/assets/icons/bootstrap-icons/$(BOOTSTRAP_ICONS_VER)/info-square.svg
+
+src/assets/icons/bootstrap-icons/$(BOOTSTRAP_ICONS_VER)/info-square.svg:
+	echo '#[ $@ ]#'
+	[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	curl -s https://unpkg.com/bootstrap-icons$(subst v,@,$(BOOTSTRAP_ICONS_VER))/icons/info-square.svg > $@
 
 .PHONY: icons
 icons: $(iconsBuild)

@@ -190,7 +190,12 @@ environment so we can host can serve `example.com` HTTPS pages.
  and add these cert files to our proxy server.
 
 ```
-make proxy-mkcert
+> make proxy-mkcert
+##[ proxy-mkcert ]##
+Created a new certificate valid for the following names 📜
+ - "example.com"
+The certificate is at "src/proxy/certs/example.com.pem" and the key at "src/proxy/certs/example.com.key.pem" ✅
+It will expire on 1 March 2025 🗓
 ```
 
  Note: this is only for a pseudo play domain you do not control and only in our local development environment
@@ -203,7 +208,7 @@ Now we have set up our xqerl XQuery application development environment we can s
 
 Our local development build cycle will consists of:
  1. **editing** source files located in the src directory
- 2. **building** storing build-chain result items into appropriate container volumes 
+ 2. **building** invoking Makefile targets that will store build-chain result items into appropriate container volumes 
  then creating a **build artefact** tar of the respective volume.
  3. **checking** the build which is site reachable at your development DNS domain e.g. http://example.com
 
